@@ -1,0 +1,25 @@
+# Dependencies
+coops-app/vendor/
+coops-ui/node_modules/
+
+# Build output (generated from coops-ui)
+coops-app/public/assets/
+coops-app/public/service-worker.js
+coops-app/public/workbox-*.js
+
+# Environment files (contain secrets)
+coops-app/.env
+
+# Storage & cache (uploaded files, logs, framework cache)
+coops-app/storage/
+coops-app/bootstrap/cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
