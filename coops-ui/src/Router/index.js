@@ -37,6 +37,7 @@ import BillsDashboard from "../Pages/BillsDashboard/BillsDashboard.vue";
 import BillReports from "../Pages/BillReports/BillReports.vue";
 import AggregateReport from "../Pages/Reports/AggregateReport.vue";
 import AiSettings from "../Pages/AiSettings/AiSettings.vue";
+import EmailNotification from "../Pages/EmailNotification/EmailNotification.vue";
 
 import Profile from "../Pages/Profile/Profile.vue";
 import Login from "../Modules/Login/Login.vue";
@@ -229,6 +230,14 @@ const routes = [
         path: "/platform/ai-settings",
         name: "ai_settings",
         component: AiSettings,
+        meta: {
+          requiresAuth: true,
+        },
+      },
+      {
+        path: "/platform/email-notification",
+        name: "email_notification",
+        component: EmailNotification,
         meta: {
           requiresAuth: true,
         },

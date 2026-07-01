@@ -144,6 +144,10 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth:api']], function () {
     Route::post('/ai/settings',    [AiSettingsController::class, 'update']);
     Route::post('/ai/settings/test', [AiSettingsController::class, 'test']);
 
+    // Email notifications (Super Admin only — enforced inside the controller).
+    Route::get('/notifications/users',  [\App\Http\Controllers\Api\EmailNotificationController::class, 'users']);
+    Route::post('/notifications/send',  [\App\Http\Controllers\Api\EmailNotificationController::class, 'send']);
+
 });
 
 

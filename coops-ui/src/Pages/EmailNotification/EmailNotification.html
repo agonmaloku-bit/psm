@@ -1,0 +1,117 @@
+<content-header>
+    <template #title>
+        <h1 class="m-0">Email Notification</h1>
+    </template>
+    <template #breadcrumb>
+        <breadcrumb-item>
+            <router-link to="/platform">Dashboard</router-link>
+        </breadcrumb-item>
+        <breadcrumb-item :active="true">Email Notification</breadcrumb-item>
+    </template>
+</content-header>
+
+<page-content>
+    <template #cardTitle>Send Email to Users</template>
+    <template #cardBody>
+        <div v-if="loading" class="text-center py-4">
+            <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+        </div>
+
+        <div v-else>
+            <!-- Result banner -->
+            <div v-if="result" class="alert" :class="result.success ? 'alert-success' : 'alert-danger'" style="margin-bottom: 20px;">
+                <i class="fas" :class="result.success ? 'fa-check-circle' : 'fa-exclamation-circle'"></i>
+                {{ result.message }}
+                <button type="button" class="close" @click="result = null"><span>&times;</span></button>
+            </div>
+
+            <div class="row">
+                <!-- Left: Compose -->
+                <div class="col-lg-7">
+                    <div class="notif-section">
+                        <h5 class="notif-section-title"><i class="fas fa-pen mr-2"></i>Compose</h5>
+
+                        <div class="form-group">
+                            <label for="notifSubject">Subject</label>
+                            <input
+                                id="notifSubject"
+                                type="text"
+                                class="form-control"
+                                v-model="subject"
+                                placeholder="Enter email subject..."
+                                maxlength="255"
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="notifBody">Message Body</label>
+                            <textarea
+                                id="notifBody"
+                                class="form-control"
+                                v-model="body"
+                                rows="10"
+                                placeholder="Write your message here..."
+                                style="resize: vertical;"
+                            ></textarea>
+                            <small class="text-muted">Plain text. Line breaks will be preserved in the email.</small>
+                        </div>
+
+                        <button
+                            class="btn btn-primary"
+                            :disabled="!canSend || sending"
+                            @click="send"
+                        >
+                            <i class="fas fa-paper-plane mr-1"></i>
+                            {{ sending ? 'Sending...' : 'Send Email' }}
+                            <span v-if="selectedUserIds.length" class="badge badge-light ml-1">{{ selectedUserIds.length }}</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: Recipients -->
+                <div class="col-lg-5">
+                    <div class="notif-section">
+                        <h5 class="notif-section-title"><i class="fas fa-users mr-2"></i>Recipients</h5>
+
+                        <div class="notif-recipients-toolbar">
+                            <label class="notif-select-all">
+                                <input type="checkbox" v-model="selectAll" />
+                                <span>Select All ({{ filteredUsers.length }})</span>
+                            </label>
+                            <input
+                                type="text"
+                                class="form-control form-control-sm notif-search"
+                                v-model="searchQuery"
+                                placeholder="Search users..."
+                            />
+                        </div>
+
+                        <div class="notif-user-list">
+                            <div
+                                v-for="user in filteredUsers"
+                                :key="user.id"
+                                class="notif-user-item"
+                                :class="{ 'notif-user-item--selected': isSelected(user.id) }"
+                                @click="toggleUser(user.id)"
+                            >
+                                <input type="checkbox" :checked="isSelected(user.id)" @click.stop="toggleUser(user.id)" />
+                                <div class="notif-user-info">
+                                    <span class="notif-user-name">{{ user.first_name }} {{ user.last_name }}</span>
+                                    <span class="notif-user-email">{{ user.email }}</span>
+                                </div>
+                            </div>
+                            <div v-if="filteredUsers.length === 0" class="text-muted text-center py-3">
+                                No users found.
+                            </div>
+                        </div>
+
+                        <div class="notif-selected-count" v-if="selectedUserIds.length">
+                            <i class="fas fa-check-circle text-success mr-1"></i>
+                            {{ selectedUserIds.length }} recipient{{ selectedUserIds.length > 1 ? 's' : '' }} selected
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+</page-content>

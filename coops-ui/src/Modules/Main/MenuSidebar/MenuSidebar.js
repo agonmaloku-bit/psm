@@ -115,6 +115,7 @@ export default {
       if (can("Permissions Show All"))mgmtChildren.push({ name: this.$t("sidebar.permissions"), path: "/platform/permissions" });
       if (can("Super Admin"))         mgmtChildren.push({ name: this.$t("sidebar.workflows"),   path: "/platform/workflows" });
       if (can("Super Admin"))         mgmtChildren.push({ name: "AI Settings",                  path: "/platform/ai-settings" });
+      if (can("Super Admin"))         mgmtChildren.push({ name: "Email Notification",           path: "/platform/email-notification" });
       if (can("App Roles Manage"))    mgmtChildren.push({ name: this.$t("sidebar.businessRoles"), path: "/platform/app-roles" });
       if (mgmtChildren.length) {
         items.push({
