@@ -58,6 +58,38 @@
                 <p class="ai-hint">Disable if your data residency rules forbid sending document scans to OpenAI.</p>
             </div>
 
+            <div class="ai-row">
+                <label for="ai_prompt">Verification Prompt (System Message)</label>
+                <textarea
+                    id="ai_prompt"
+                    class="form-control"
+                    v-model="form.verification_prompt"
+                    rows="14"
+                    :placeholder="default_prompt"
+                    style="font-family: monospace; font-size: 13px; line-height: 1.5;"
+                ></textarea>
+                <p class="ai-hint">
+                    Customize the system prompt sent to the AI when verifying invoices. Leave empty to use the default prompt.
+                    The prompt instructs the AI how to extract and compare invoice fields.
+                </p>
+                <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary mt-1"
+                    @click="form.verification_prompt = default_prompt"
+                    v-if="!form.verification_prompt"
+                >
+                    <i class="fas fa-copy mr-1"></i> Load default prompt for editing
+                </button>
+                <button
+                    type="button"
+                    class="btn btn-sm btn-outline-warning mt-1"
+                    @click="form.verification_prompt = ''"
+                    v-if="form.verification_prompt"
+                >
+                    <i class="fas fa-undo mr-1"></i> Reset to default
+                </button>
+            </div>
+
             <div class="ai-actions">
                 <button type="submit" class="btn btn-primary" :disabled="saving">
                     <i class="fas fa-save mr-1"></i>

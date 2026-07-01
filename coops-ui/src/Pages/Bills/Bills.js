@@ -1932,8 +1932,10 @@ export default {
       return (this.canAiVerify = false);
     },
     checkIfUserHasPermissionToGenerateReport() {
-      const roleName = this.user.roles[0].name;
-      if (roleName === 'Procurement Officer' || roleName === 'Super Admin') {
+      const permission = "Reports Add";
+      let p1 = this.rolePermissions.filter((p) => p.name === permission);
+      let p2 = this.directPermissions.filter((p) => p.name === permission);
+      if (p1.length >= 1 || p2.length >= 1) {
         return (this.canGenerateReport = true);
       }
       return (this.canGenerateReport = false);
@@ -2075,167 +2077,88 @@ export default {
       // Close the document and print
       WinPrint.document.close();
       WinPrint.focus();
-      WinPrint.print();
-      WinPrint.close();
+      // Wait for images to load before printing
+      const imgs = WinPrint.document.querySelectorAll('img');
+      if (imgs.length > 0) {
+        let loaded = 0;
+        imgs.forEach(img => {
+          if (img.complete) {
+            loaded++;
+          } else {
+            img.onload = img.onerror = () => {
+              loaded++;
+              if (loaded >= imgs.length) { WinPrint.print(); WinPrint.close(); }
+            };
+          }
+        });
+        if (loaded >= imgs.length) { WinPrint.print(); WinPrint.close(); }
+      } else {
+        WinPrint.print();
+        WinPrint.close();
+      }
     },
 
     generatePrintContent(bill, index) {
-      console.log("Bill object:", bill);
-      const commentsHtml = bill.comments
-        ? `<tr style="height: auto; border: 1px solid black;">
-          <td>Komentet:</td>
-          <td v-if="bill.comments.length >= 1" style="max-width: 400px">
-            ${bill.comments
-              .map(
-                (comment) => `<div class="mb-1">
-                  <span v-if="${
-                    comment.steps !== null
-                  }" class="badge badge-warning">Step ${comment.steps}</span>
-                  <p class="mb-0">${comment.name}</p>
-                  -<small>${comment.user_id}</small>
-                </div>`
-              )
-              .join("")}
-          </td>
-        </tr>`
-        : "";
+      const commentsHtml = (bill.comments && bill.comments.length > 0)
+        ? bill.comments.map(c => {
+            const stepBadge = c.steps !== null ? `<span style="display:inline-block;padding:2px 8px;background:#f59e0b;color:#fff;border-radius:4px;font-size:11px;margin-right:4px;">Step ${c.steps}</span>` : '';
+            return `<div style="margin-bottom:6px;">${stepBadge}<span>${c.name}</span> <small style="color:#666;">- ${c.user_id}</small></div>`;
+          }).join('')
+        : '';
 
-      const documentsHtml = bill.files
-        ? `
-        <tr style="border: 1px solid black;">
-          <td>Dokumentet e bashkangjitura:</td>
-          <td>
-            ${bill.files
-              .map(
-                (file) => `<div key="${file.id}">
-                  <a href="#" @click="getBillAttachment(${JSON.stringify(
-                    file
-                  )})" class="btn-link text-secondary">
-                    <i class="far fa-fw ${this.showAttachmentIcon(
-                      file.file_extension
-                    )}"></i>${file.file_name}
-                  </a>
-                </div>`
-              )
-              .join("")}
-          </td>
-        </tr>`
-        : "";
+      const filesHtml = (bill.files && bill.files.length > 0)
+        ? bill.files.map(f => `<div style="margin-bottom:4px;">${f.file_name || f.file_id}</div>`).join('')
+        : '';
 
-      const prtHtml = `
-      <div id="printTable${index}">
-      <table
-        v-if="!isLoading && billsPaginatedData"
-        id="printTable"
-        class="table table-hover table-borderless table-striped p-0"
-      >
-        <div class="" style="width: 100%;">
-        <img style="width: 50%;" src="../../../public/img/Picture3.svg" >
-        </div>
-        <h3 style="text-align: center;"> FORMULARI I APROVIMIT TË FATURAVE </h3>
-        <thead>
-          <tr>
-            <th>Emërtimi</th>
-            <th>Përshkrimi</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr style="border: 1px solid black;">
-            <td style="width: 45%">Id:</td>
-            <td style="width: 50%">${bill.id}</td>
-          </tr>
-          <tr style="border: 1px solid black;">
-            <td>Furnitori:</td>
-            <td>${bill.supplier}</td>
-          </tr>
-          <tr style="border: 1px solid black;">
-            <td>Numri i faturës:</td>
-            <td>${bill.bill_no}</td>
-          </tr>
-          <tr style="border: 1px solid black;">
-            <td>Lloji:</td>
-            <td>${bill.type}</td>
-          </tr>
-          <tr style="border: 1px solid black;">
-            <td>Vlera:</td>
-            <td>${bill.value}</td>
-          </tr>
-          <tr style="border: 1px solid black;">
-            <td>Përshrkimi:</td>
-            <td>${bill.description || ""}</td>
-          </tr>
-          <tr style="border: 1px solid black;">
-            <td>Për Departamentin:</td>
-            <td>${bill.assigned_dep_id}</td>
-          </tr>
-          <tr style="border: 1px solid black;">
-            <td>Pranoi nga departamenti</td>
-            <td>${
-              bill.updated_by && bill.updated_by.first_name
-                ? bill.updated_by.first_name
-                : ""
-            } ${
-        bill.updated_by && bill.updated_by.last_name
-          ? bill.updated_by.last_name
-          : ""
-      }</td>
-            </tr>
-          <tr style="border: 1px solid black;">
-          <td>Komenti:</td>
-          <td>${bill.name || ""}</td>
-        </tr>
-          <tr style="border: 1px solid black;">
-            <td>Krijuar nga:</td>
-            <td>${bill.created_by.first_name} ${bill.created_by.last_name}</td>
-          </tr>
-          <tr style="border: 1px solid black;">
-            <td>Step:</td>
-            <td v-if="bill.step">
-              <span class="badge badge-warning">Step ${bill.step}</span>
-            </td>
-          </tr>
-          <tr style="border: 1px solid black;">
-            <td>Status:</td>
-            <td>
-              <span class="badge badge-info">${this.checkBillStatus(
-                bill.status
-              )}</span>
-            </td>
-          </tr>
-          ${commentsHtml}
-          ${documentsHtml}
-          <tr style="border: 1px solid black;">
-            <td>Së fundmi modifikuar më:</td>
-            <td>${new Date(bill.updated_at).toLocaleString()}</td>
-          </tr>
-          <tr style="border: 1px solid black;">
-            <td>Krijuar më:</td>
-            <td>${new Date(bill.created_at).toLocaleString()}</td>
-          </tr>
-          <tr style="border: 1px solid black;">
-            <td>Aprovuar herën e parë më:</td>
-            <td>${new Date(bill.approved_first).toLocaleString() || ""}</td>
-          </tr>
-          <tr style="border: 1px solid black;">
-            <td>Aprovuar herën e dytë më:</td>
-            <td>${new Date(bill.approved_second).toLocaleString()|| ""}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>`;
-
-      let stylesHtml = "";
-      for (const node of [
-        ...document.querySelectorAll('link[rel="stylesheet"], style'),
-      ]) {
-        stylesHtml += node.outerHTML;
-      }
+      const statusText = this.checkBillStatus(bill.status);
+      const acceptedBy = (bill.updated_by && bill.updated_by.first_name)
+        ? `${bill.updated_by.first_name} ${bill.updated_by.last_name}`
+        : '';
+      const createdBy = (bill.created_by && bill.created_by.first_name)
+        ? `${bill.created_by.first_name} ${bill.created_by.last_name}`
+        : '';
+      const approvedFirst = bill.approved_first ? new Date(bill.approved_first).toLocaleString() : 'No date';
+      const approvedSecond = bill.approved_second ? new Date(bill.approved_second).toLocaleString() : 'No date';
 
       return `
-        ${stylesHtml}
-        ${prtHtml}
-      `;
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: #333; padding: 30px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header img { max-width: 280px; margin-bottom: 10px; }
+        .header h2 { font-size: 20px; font-weight: 600; margin-top: 10px; }
+        .print-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .print-table td { padding: 10px 14px; border: 1px solid #e2e8f0; vertical-align: top; }
+        .print-table tr:nth-child(even) { background: #f8fafc; }
+        .print-table td:first-child { font-weight: 600; width: 40%; color: #475569; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+        .badge-step { background: #f59e0b; color: #fff; }
+        .badge-status { background: #3b82f6; color: #fff; }
+      </style>
+      <div class="header">
+        <img src="/img/Picture3.svg" alt="Logo" />
+        <h2>${this.$t('bills.info.approvalFormTitle')}</h2>
+      </div>
+      <table class="print-table">
+        <tr><td>Id:</td><td>${bill.id}</td></tr>
+        <tr><td>${this.$t('bills.supplier')}:</td><td>${bill.supplier || ''}</td></tr>
+        <tr><td>${this.$t('bills.info.billNumber')}:</td><td>${bill.bill_no || ''}</td></tr>
+        <tr><td>${this.$t('bills.info.type')}:</td><td>${bill.type || ''}</td></tr>
+        <tr><td>${this.$t('bills.info.value')}:</td><td>${bill.value || ''}</td></tr>
+        <tr><td>${this.$t('bills.info.description')}:</td><td>${bill.description || ''}</td></tr>
+        <tr><td>${this.$t('bills.info.forDepartment')}:</td><td>${bill.assigned_dep_id || ''}</td></tr>
+        <tr><td>${this.$t('bills.info.acceptedByDepartment')}:</td><td>${acceptedBy}</td></tr>
+        <tr><td>${this.$t('bills.info.comment')}:</td><td>${bill.name || ''}</td></tr>
+        <tr><td>${this.$t('bills.info.createdBy')}:</td><td>${createdBy}</td></tr>
+        <tr><td>Step:</td><td><span class="badge badge-step">Step ${bill.step || '-'}</span></td></tr>
+        <tr><td>Status:</td><td><span class="badge badge-status">${statusText}</span></td></tr>
+        ${commentsHtml ? `<tr><td>${this.$t('bills.info.comments')}:</td><td>${commentsHtml}</td></tr>` : ''}
+        ${filesHtml ? `<tr><td>${this.$t('bills.info.attachments')}:</td><td>${filesHtml}</td></tr>` : ''}
+        <tr><td>${this.$t('common.lastModifiedAt')}:</td><td>${new Date(bill.updated_at).toLocaleString()}</td></tr>
+        <tr><td>${this.$t('common.createdAt')}:</td><td>${new Date(bill.created_at).toLocaleString()}</td></tr>
+        <tr><td>${this.$t('bills.info.firstApprovalDate')}:</td><td>${approvedFirst}</td></tr>
+        <tr><td>${this.$t('bills.info.secondApprovalDate')}:</td><td>${approvedSecond}</td></tr>
+      </table>`;
     },
 
     isEligibleForReport(bill) {
@@ -2332,32 +2255,108 @@ export default {
         this.fetchAllBills(this.query);
       });
 
-      // Open print window
-      const prtHtml = document.getElementById("printTable").outerHTML;
-      let stylesHtml = "";
-      for (const node of [
-        ...document.querySelectorAll('link[rel="stylesheet"], style'),
-      ]) {
-        stylesHtml += node.outerHTML;
-      }
+      const bill = this.bill;
+      const statusText = this.checkBillStatus(bill.status);
+      const departmentName = bill.assigned_dep_id || '';
+      const acceptedBy = (bill.updated_by && bill.updated_by.first_name)
+        ? `${bill.updated_by.first_name} ${bill.updated_by.last_name}`
+        : '';
+      const createdBy = (bill.created_by && bill.created_by.first_name)
+        ? `${bill.created_by.first_name} ${bill.created_by.last_name}`
+        : '';
+
+      const commentsHtml = (bill.comments && bill.comments.length > 0)
+        ? bill.comments.map(c => {
+            const stepBadge = c.steps !== null ? `<span style="display:inline-block;padding:2px 8px;background:#f59e0b;color:#fff;border-radius:4px;font-size:11px;margin-right:4px;">Step ${c.steps}</span>` : '';
+            const userName = c.user ? `${c.user.first_name || ''} ${c.user.last_name || ''}`.trim() : (c.user_id || '');
+            return `<div style="margin-bottom:6px;">${stepBadge}<span>${c.name}</span> <small style="color:#666;">- ${userName}</small></div>`;
+          }).join('')
+        : '';
+
+      const filesHtml = (bill.files && bill.files.length > 0)
+        ? bill.files.map(f => `<div style="margin-bottom:4px;"><span>${f.file_name || f.file_id}</span></div>`).join('')
+        : '';
+
+      const approvedFirst = bill.approved_first ? new Date(bill.approved_first).toLocaleString() : this.$t('bills.info.noDate');
+      const approvedSecond = bill.approved_second ? new Date(bill.approved_second).toLocaleString() : this.$t('bills.info.noDate');
+      const awaitingHtml = bill.workflow_step_label
+        ? `<tr><td>${this.$t('bills.info.awaitingApprovalFrom')}</td><td><strong>${this.billStepLabel(bill.workflow_step_label)}</strong></td></tr>`
+        : '';
+
+      const printHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Bill PDF</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: #333; padding: 30px; }
+    .header { text-align: center; margin-bottom: 20px; }
+    .header img { max-width: 280px; margin-bottom: 10px; }
+    .header h2 { font-size: 20px; font-weight: 600; margin-top: 10px; }
+    .print-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    .print-table td { padding: 10px 14px; border: 1px solid #e2e8f0; vertical-align: top; }
+    .print-table tr:nth-child(even) { background: #f8fafc; }
+    .print-table td:first-child { font-weight: 600; width: 40%; color: #475569; }
+    .print-table td:last-child { width: 60%; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+    .badge-step { background: #f59e0b; color: #fff; }
+    .badge-status { background: #3b82f6; color: #fff; }
+    .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #94a3b8; padding: 12px 14px 6px; letter-spacing: 0.5px; }
+    @media print { body { padding: 15px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="/img/Picture3.svg" alt="Logo" />
+    <h2>${this.$t('bills.info.approvalFormTitle')}</h2>
+  </div>
+  <table class="print-table">
+    <tr><td>${this.$t('common.id')}</td><td>${bill.id}</td></tr>
+    <tr><td>${this.$t('bills.supplier')}</td><td>${bill.supplier || ''}</td></tr>
+    <tr><td>${this.$t('bills.info.billNumber')}</td><td>${bill.bill_no || ''}</td></tr>
+    <tr><td>${this.$t('bills.info.type')}</td><td>${bill.type || ''}</td></tr>
+    <tr><td>${this.$t('bills.info.value')}</td><td>${bill.value || ''}</td></tr>
+    <tr><td>${this.$t('bills.info.description')}</td><td>${bill.description || ''}</td></tr>
+    <tr><td>${this.$t('bills.info.forDepartment')}</td><td>${departmentName}</td></tr>
+    <tr><td>${this.$t('bills.info.acceptedByDepartment')}</td><td>${acceptedBy}</td></tr>
+    <tr><td>${this.$t('bills.info.comment')}</td><td>${bill.name || ''}</td></tr>
+    <tr><td>${this.$t('bills.info.createdBy')}</td><td>${createdBy}</td></tr>
+    <tr><td>${this.$t('bills.info.step')}</td><td><span class="badge badge-step">Step ${bill.step || '-'}</span></td></tr>
+    <tr><td>${this.$t('bills.info.status')}</td><td><span class="badge badge-status">${statusText}</span></td></tr>
+    ${commentsHtml ? `<tr><td>${this.$t('bills.info.comments')}</td><td>${commentsHtml}</td></tr>` : ''}
+    ${filesHtml ? `<tr><td>${this.$t('bills.info.attachments')}</td><td>${filesHtml}</td></tr>` : ''}
+    <tr><td>${this.$t('common.lastModifiedAt')}</td><td>${new Date(bill.updated_at).toLocaleString()}</td></tr>
+    <tr><td>${this.$t('common.createdAt')}</td><td>${new Date(bill.created_at).toLocaleString()}</td></tr>
+    <tr><td>${this.$t('bills.info.firstApprovalDate')}</td><td>${approvedFirst}</td></tr>
+    <tr><td>${this.$t('bills.info.secondApprovalDate')}</td><td>${approvedSecond}</td></tr>
+    ${awaitingHtml}
+  </table>
+</body>
+</html>`;
+
       const WinPrint = window.open();
-
-      WinPrint.document.write(`<!DOCTYPE html>
-            <html>
-            
-              <head>
-              <title>Bill PDF</title>
-                ${stylesHtml}
-              </head>
-              <body>
-                ${prtHtml}
-              </body>
-            </html>`);
-
+      WinPrint.document.write(printHtml);
       WinPrint.document.close();
       WinPrint.focus();
-      WinPrint.print();
-      WinPrint.close();
+      // Wait for images to load before printing
+      const imgs = WinPrint.document.querySelectorAll('img');
+      if (imgs.length > 0) {
+        let loaded = 0;
+        imgs.forEach(img => {
+          if (img.complete) {
+            loaded++;
+          } else {
+            img.onload = img.onerror = () => {
+              loaded++;
+              if (loaded >= imgs.length) { WinPrint.print(); WinPrint.close(); }
+            };
+          }
+        });
+        if (loaded >= imgs.length) { WinPrint.print(); WinPrint.close(); }
+      } else {
+        WinPrint.print();
+        WinPrint.close();
+      }
     },
 
     showSearch() {

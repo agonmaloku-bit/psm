@@ -22,9 +22,11 @@ export default {
                 model: "gpt-4o-mini",
                 vision_enabled: true,
                 api_key: "",
+                verification_prompt: "",
             },
             api_key_set: false,
             api_key_hint: null,
+            default_prompt: "",
         };
     },
     mounted() {
@@ -40,6 +42,8 @@ export default {
                 this.form.base_url       = d.base_url       || "https://api.openai.com/v1";
                 this.form.model          = d.model          || "gpt-4o-mini";
                 this.form.vision_enabled = d.vision_enabled !== false;
+                this.form.verification_prompt = d.verification_prompt || "";
+                this.default_prompt      = d.default_prompt  || "";
                 this.api_key_set         = !!d.api_key_set;
                 this.api_key_hint        = d.api_key_hint   || null;
                 this.form.api_key        = ""; // never echo, always blank
@@ -58,6 +62,7 @@ export default {
                     base_url: this.form.base_url,
                     model: this.form.model,
                     vision_enabled: this.form.vision_enabled,
+                    verification_prompt: this.form.verification_prompt,
                 };
                 if (this.form.api_key && this.form.api_key.trim() !== "") {
                     payload.api_key = this.form.api_key.trim();

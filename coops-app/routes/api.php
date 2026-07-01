@@ -50,6 +50,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 Route::post('/login', [AuthenticationController::class, 'login']);
 Route::post('/register', [AuthenticationController::class, 'register']);
+Route::post('/forgot-password', [\App\Http\Controllers\Api\Auth\PasswordResetController::class, 'forgotPassword']);
+Route::post('/reset-password', [\App\Http\Controllers\Api\Auth\PasswordResetController::class, 'resetPassword']);
 Route::post('/logout', [AuthenticationController::class, 'logout'])->middleware(['auth:api']);
 Route::post('/profile', [AuthenticationController::class, 'postProfile'])->middleware(['auth:api']);
 Route::get('/user', [AuthenticationController::class, 'getUser'])->middleware(['auth:api']);

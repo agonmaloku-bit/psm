@@ -19,6 +19,7 @@ class OpenAiClient
     public const KEY_BASE_URL  = 'ai.openai.base_url';
     public const KEY_MODEL     = 'ai.openai.model';
     public const KEY_VISION    = 'ai.openai.vision_enabled';
+    public const KEY_PROMPT    = 'ai.verification_prompt';
 
     public const DEFAULT_BASE_URL = 'https://api.openai.com/v1';
     public const DEFAULT_MODEL    = 'gpt-4o-mini';

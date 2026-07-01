@@ -20,6 +20,7 @@ class AiSettingsController extends Controller
         OpenAiClient::KEY_BASE_URL,
         OpenAiClient::KEY_MODEL,
         OpenAiClient::KEY_VISION,
+        OpenAiClient::KEY_PROMPT,
     ];
 
     public const ALL_KEYS = [
@@ -28,6 +29,7 @@ class AiSettingsController extends Controller
         OpenAiClient::KEY_BASE_URL,
         OpenAiClient::KEY_MODEL,
         OpenAiClient::KEY_VISION,
+        OpenAiClient::KEY_PROMPT,
     ];
 
     /**
@@ -39,6 +41,7 @@ class AiSettingsController extends Controller
 
         $values = AppSetting::getMany(self::ALL_KEYS);
         $apiKey = (string) ($values[OpenAiClient::KEY_API_KEY] ?? '');
+        $customPrompt = $values[OpenAiClient::KEY_PROMPT] ?? '';
         return ResponseResource::make([
             'data' => [
                 'enabled'        => filter_var($values[OpenAiClient::KEY_ENABLED] ?? false, FILTER_VALIDATE_BOOLEAN),
@@ -47,6 +50,8 @@ class AiSettingsController extends Controller
                 'vision_enabled' => filter_var($values[OpenAiClient::KEY_VISION] ?? true, FILTER_VALIDATE_BOOLEAN),
                 'api_key_set'    => $apiKey !== '',
                 'api_key_hint'   => $apiKey !== '' ? ('…' . substr($apiKey, -4)) : null,
+                'verification_prompt' => $customPrompt,
+                'default_prompt' => \App\Services\AI\BillVerifier::getDefaultPrompt(),
             ],
         ]);
     }
@@ -65,6 +70,7 @@ class AiSettingsController extends Controller
             'model'          => 'nullable|string|max:100',
             'vision_enabled' => 'sometimes|boolean',
             'api_key'        => 'nullable|string|max:255',
+            'verification_prompt' => 'nullable|string|max:10000',
         ]);
 
         if (array_key_exists('enabled', $data)) {
@@ -81,6 +87,9 @@ class AiSettingsController extends Controller
         }
         if (!empty($data['api_key'])) {
             AppSetting::set(OpenAiClient::KEY_API_KEY, $data['api_key'], true, OpenAiClient::GROUP);
+        }
+        if (array_key_exists('verification_prompt', $data)) {
+            AppSetting::set(OpenAiClient::KEY_PROMPT, $data['verification_prompt'] ?? '', false, OpenAiClient::GROUP);
         }
 
         return $this->index($request);

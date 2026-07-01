@@ -41,6 +41,8 @@ import AiSettings from "../Pages/AiSettings/AiSettings.vue";
 import Profile from "../Pages/Profile/Profile.vue";
 import Login from "../Modules/Login/Login.vue";
 import Register from "../Modules/Register/Register.vue";
+import ForgotPassword from "../Modules/ForgotPassword/ForgotPassword.vue";
+import ResetPassword from "../Modules/ResetPassword/ResetPassword.vue";
 import NotFound from "../Modules/NotFound/NotFound.vue";
 
 const routes = [
@@ -355,6 +357,22 @@ const routes = [
     path: "/register",
     name: "Register",
     component: Register,
+    meta: {
+      requiresAuth: false,
+    },
+  },
+  {
+    path: "/forgot-password",
+    name: "ForgotPassword",
+    component: ForgotPassword,
+    meta: {
+      requiresAuth: false,
+    },
+  },
+  {
+    path: "/reset-password",
+    name: "ResetPassword",
+    component: ResetPassword,
     meta: {
       requiresAuth: false,
     },

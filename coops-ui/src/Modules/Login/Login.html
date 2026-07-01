@@ -119,7 +119,7 @@
                         <input type="checkbox" id="remember" v-model="remember_me">
                         <label for="remember">{{ $t('login.rememberMe') }}</label>
                     </div>
-                    <a href="forgot-password.html" class="coops-forgot-link">{{ $t('login.forgotPassword') }}</a>
+                    <router-link to="/forgot-password" class="coops-forgot-link">{{ $t('login.forgotPassword') }}</router-link>
                 </div>
 
                 <app-button

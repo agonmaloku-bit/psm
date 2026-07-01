@@ -6,6 +6,7 @@ use App\Models\Bill;
 use App\Models\BillAiCheck;
 use App\Models\BillFiles;
 use App\Models\Supplier;
+use App\Models\AppSetting;
 use Carbon\Carbon;
 
 /**
@@ -182,49 +183,8 @@ class BillVerifier
 
     protected static function buildMessages(array $expected, string $absPath, string $ext, bool $isPdf, array $renderedPages = []): array
     {
-        $system = <<<TXT
-You are an invoice verification assistant for a corporate operations platform.
-You receive an invoice document together with the values that the user typed
-into the system. Compare what you can read from the document with the
-"expected" values and report any discrepancies.
-
-Respond ONLY with valid JSON, no prose, no markdown. Schema:
-
-{
-  "extracted": {
-    "supplier": string|null,
-    "invoice_number": string|null,
-    "invoice_date": string|null,    // ISO YYYY-MM-DD if possible
-    "currency": string|null,
-    "subtotal": number|null,
-    "vat": number|null,
-    "total": number|null,
-    "iban": string|null,
-    "tax_id": string|null,
-    "line_items": [{ "description": string, "qty": number|null, "unit_price": number|null, "total": number|null }]
-  },
-  "findings": [
-    {
-      "code": string,            // short stable id, e.g. "supplier_mismatch"
-      "field": string|null,      // which field on the form/document
-      "severity": "ok"|"warn"|"block",
-      "message": string,         // human readable, ~1 sentence
-      "expected": any|null,
-      "actual": any|null
-    }
-  ]
-}
-
-Rules:
-- Use "block" only for clear mismatches that should stop approval (e.g. total
-  on form is 1240 but invoice clearly shows 1420).
-- Use "warn" for fuzzy issues (slight name difference, missing IBAN, illegible
-  field, math doesn't add up by a small rounding amount).
-- Use "ok" findings sparingly — only to confirm an explicit positive match.
-- Numbers must be numeric, not strings. Use `null` if not visible.
-- Never invent data. If a field is unreadable, set it to null and add a
-  "warn" finding code "unreadable_field".
-TXT;
+        // Load custom prompt from settings, or use default
+        $system = self::getSystemPrompt();
 
         $userText = "Expected (from the bill form in the system):\n"
             . json_encode($expected, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
@@ -286,6 +246,74 @@ TXT;
     }
 
     /**
+     * Get the system prompt from settings, or return the default.
+     */
+    public static function getSystemPrompt(): string
+    {
+        $custom = AppSetting::get(OpenAiClient::KEY_PROMPT);
+        if (!empty($custom)) {
+            return $custom;
+        }
+        return self::getDefaultPrompt();
+    }
+
+    /**
+     * Default verification prompt.
+     */
+    public static function getDefaultPrompt(): string
+    {
+        return <<<'TXT'
+You are an invoice verification assistant for a corporate operations platform.
+You receive an invoice document together with the values that the user typed
+into the system. Compare what you can read from the document with the
+"expected" values and report any discrepancies.
+
+IMPORTANT: The "value" field from the system represents the TOTAL INCLUDING VAT
+(gross total). When comparing, match it against the grand total on the invoice
+(after VAT), NOT the subtotal before VAT.
+
+Respond ONLY with valid JSON, no prose, no markdown. Schema:
+
+{
+  "extracted": {
+    "supplier": string|null,
+    "invoice_number": string|null,
+    "invoice_date": string|null,    // ISO YYYY-MM-DD if possible
+    "currency": string|null,
+    "subtotal": number|null,        // net amount before VAT
+    "vat": number|null,             // VAT amount
+    "total": number|null,           // gross total including VAT
+    "iban": string|null,
+    "tax_id": string|null,
+    "line_items": [{ "description": string, "qty": number|null, "unit_price": number|null, "total": number|null }]
+  },
+  "findings": [
+    {
+      "code": string,            // short stable id, e.g. "supplier_mismatch"
+      "field": string|null,      // which field on the form/document
+      "severity": "ok"|"warn"|"block",
+      "message": string,         // human readable, ~1 sentence
+      "expected": any|null,
+      "actual": any|null
+    }
+  ]
+}
+
+Rules:
+- The expected "value" is always the TOTAL INCLUDING VAT. Compare it to the
+  invoice's grand total (with VAT included), not to the subtotal.
+- Use "block" only for clear mismatches that should stop approval (e.g. total
+  on form is 1240 but invoice clearly shows 1420).
+- Use "warn" for fuzzy issues (slight name difference, missing IBAN, illegible
+  field, math doesn't add up by a small rounding amount).
+- Use "ok" findings sparingly — only to confirm an explicit positive match.
+- Numbers must be numeric, not strings. Use `null` if not visible.
+- Never invent data. If a field is unreadable, set it to null and add a
+  "warn" finding code "unreadable_field".
+TXT;
+    }
+
+    /**
      * Deterministic checks we always run, model-independent.
      *
      * @return array<int,array>
@@ -332,16 +360,25 @@ TXT;
 
         // 4) Cross-check extracted values vs form.
         if (is_array($extracted)) {
-            // Total mismatch
+            // Total mismatch — compare form value (total incl. VAT) against extracted total.
+            // Also accept if subtotal + vat matches the form value (model might have
+            // placed net in total field by mistake).
             $extTotal = is_numeric($extracted['total'] ?? null) ? (float) $extracted['total'] : null;
+            $sub = is_numeric($extracted['subtotal'] ?? null) ? (float) $extracted['subtotal'] : null;
+            $vat = is_numeric($extracted['vat']      ?? null) ? (float) $extracted['vat']      : null;
+
             if ($extTotal !== null && $val !== null) {
                 $diff = abs($extTotal - $val);
                 $rel  = $val > 0 ? $diff / $val : 1;
-                if ($diff > 1 && $rel > 0.01) {
+                // Check if subtotal+vat matches form value (tolerate model putting net in total)
+                $altTotal = ($sub !== null && $vat !== null) ? $sub + $vat : null;
+                $altMatch = $altTotal !== null && abs($altTotal - $val) <= 1;
+
+                if ($diff > 1 && $rel > 0.01 && !$altMatch) {
                     $issues[] = [
                         'code' => 'total_mismatch', 'field' => 'value',
                         'severity' => 'block',
-                        'message' => sprintf('Form total (%.2f) does not match invoice total (%.2f).', $val, $extTotal),
+                        'message' => sprintf('The expected value of %.2f does not match the invoice total of %.2f.', $val, $extTotal),
                         'expected' => $val, 'actual' => $extTotal,
                     ];
                 }
@@ -361,8 +398,6 @@ TXT;
             }
 
             // Math: subtotal + vat = total (within 1 unit / 1%)
-            $sub = is_numeric($extracted['subtotal'] ?? null) ? (float) $extracted['subtotal'] : null;
-            $vat = is_numeric($extracted['vat']      ?? null) ? (float) $extracted['vat']      : null;
             $tot = $extTotal;
             if ($sub !== null && $vat !== null && $tot !== null) {
                 $diff = abs(($sub + $vat) - $tot);
