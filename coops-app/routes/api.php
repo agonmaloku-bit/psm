@@ -113,9 +113,11 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth:api']], function () {
     Route::get("/reports/departments", [ReportController::class, 'departments']);
     Route::get("/reports/suppliers",   [ReportController::class, 'suppliers']);
     Route::get("/reports/users",       [ReportController::class, 'users']);
+    Route::get("/bills/archived", [BillController::class, 'getArchivedBills']);
     Route::apiResource("/bills", BillController::class);
     Route::post("/bills/{id}/approve", [BillController::class, 'approveBill']);
     Route::post("/bills/{id}/cancel", [BillController::class, 'cancelBill']);
+    Route::post("/bills/{id}/archive", [BillController::class, 'archiveBill']);
     Route::post("/bills/{id}/verify-ai", [BillAiController::class, 'verify']);
     Route::get("/bills/{id}/ai-checks/latest", [BillAiController::class, 'latest']);
     Route::post("/ai/extract-bill", [BillAiController::class, 'extractFromUpload']);

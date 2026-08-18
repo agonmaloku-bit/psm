@@ -63,6 +63,11 @@ class BillMediator implements BillMediatorInterface
 
         $user = $this->userRepository->findById(auth()->user()->id);
 
+        // Bypass role-based scoping for users granted the "Bill View Any"
+        // permission — they always see every bill in the system.
+        if ($user->hasPermissionTo(Permissions::BILL_VIEW_ANY)) {
+            return BillResource::collection($this->billRepository->getAll($request));
+        }
 
         if ($user->hasRole(Roles::RESPONSIBLE_PERSON)) {
 
@@ -340,8 +345,10 @@ class BillMediator implements BillMediatorInterface
                 }
             }
 
-            // Notify bill creator (skip if already notified above)
-            if ($result['final'] || !empty($result['notifications'])) {
+            // Notify bill creator ONLY on final approval (workflow completed).
+            // Intermediate steps should only notify the roles configured in
+            // the just-completed step's notify_roles.
+            if ($result['final']) {
                 $billCreator = $this->userRepository->findById($bill->created_by);
                 if ($billCreator && !in_array($billCreator->email, $notifiedEmails)) {
                     try {
@@ -463,6 +470,65 @@ class BillMediator implements BillMediatorInterface
         \Mail::to($BillCreatedBy->email)->send(new \App\Mail\BillCanceled($bill, $user->first_name . " " . $user->last_name));
 
         return ResponseResource::make(['success' => true]);
+    }
+
+    public function archiveBill($id)
+    {
+        $user = auth()->user();
+
+        if (!Permission::hasPermissionTo(Permissions::BILL_ARCHIVE)) {
+            return response(
+                [
+                    'data' => new ResponseResource(['forbidden' => true]),
+                    'message' => 'You do not have the required authorization.'
+                ],
+                403
+            );
+        }
+
+        $bill = $this->billRepository->find($id);
+
+        if (is_null($bill)) {
+            return ResponseResource::make(['success' => false]);
+        }
+
+        // Only allow archiving from statuses: REQUESTED (1), PENDING (2), APPROVED FROM CEO (3)
+        if (!in_array($bill->status, [1, 2, 3])) {
+            return ResponseResource::make(['success' => false, 'message' => 'Bill cannot be archived in its current status.']);
+        }
+
+        $bill->status = Status::BILL_ARCHIVED;
+        $bill->updated_by = UserAuth::getUserId() ?: "1";
+        $result = $bill->save();
+
+        if ($result == 0) {
+            return ResponseResource::make(['success' => false]);
+        }
+
+        if (request()->has('comment') && request()->input('comment')) {
+            $bill->comments()->create([
+                'name' => request()->input('comment'),
+                'user_id' => UserAuth::getUserId() ?: "1",
+                'steps' => $bill->step,
+            ]);
+        }
+
+        return ResponseResource::make(['success' => true]);
+    }
+
+    public function getArchivedBills($request)
+    {
+        if (!Permission::hasPermissionTo(Permissions::BILL_ARCHIVE)) {
+            return response(
+                [
+                    'data' => new ResponseResource(['forbidden' => true]),
+                    'message' => 'You do not have the required authorization.'
+                ],
+                403
+            );
+        }
+
+        return BillResource::collection($this->billRepository->getArchived($request));
     }
 
     /**
@@ -587,10 +653,12 @@ class BillMediator implements BillMediatorInterface
     {
         $user = $this->userRepository->findById(auth()->user()->id);
 
-        $query = \App\Models\Bill::query()->whereNull('deleted_at');
+        $query = \App\Models\Bill::query()->whereNull('bills.deleted_at');
 
         // Apply the same visibility scope as the bill list
-        if ($user->hasRole(Roles::SUPER_ADMIN) || $user->hasRole(Roles::ADMIN)) {
+        if ($user->hasPermissionTo(Permissions::BILL_VIEW_ANY)) {
+            // "Bill View Any" — no scoping, see everything
+        } elseif ($user->hasRole(Roles::SUPER_ADMIN) || $user->hasRole(Roles::ADMIN)) {
             // See all bills
         } elseif ($user->hasRole(Roles::DIRECTOR_DEPARTMENT)) {
             $departmentName = $user->department ? $user->department->name : null;
@@ -629,6 +697,21 @@ class BillMediator implements BillMediatorInterface
             ->groupBy('status')
             ->pluck('total', 'status');
 
+        // Per-department breakdown of requested bills (status = 1)
+        $deptCounts = (clone $query)
+            ->where('status', 1)
+            ->join('departments', 'bills.assigned_dep_id', '=', 'departments.id')
+            ->selectRaw('departments.id as dept_id, departments.name as dept_name, count(*) as total')
+            ->groupBy('departments.id', 'departments.name')
+            ->orderByDesc('total')
+            ->get()
+            ->map(fn ($row) => [
+                'id'    => $row->dept_id,
+                'name'  => $row->dept_name,
+                'count' => $row->total,
+            ])
+            ->values();
+
         return response()->json([
             'requested'        => $counts->get(1, 0),
             'pending'          => $counts->get(2, 0),
@@ -638,6 +721,7 @@ class BillMediator implements BillMediatorInterface
             'printed'          => $counts->get(6, 0),
             'delivered'        => $counts->get(7, 0),
             'total'            => $counts->sum(),
+            'departments'      => $deptCounts,
         ]);
     }
 }

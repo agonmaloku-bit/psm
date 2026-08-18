@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\DB;
  * Aggregated reports for departments, suppliers and users.
  *
  * Each endpoint accepts the optional query params:
- *   - preset: today | yesterday | this_week | last_week | this_month | last_month | custom
+ *   - preset: today | yesterday | this_week | last_week | this_month | last_month | month | custom | all_time
+ *   - month:  YYYY-MM (required when preset=month)
  *   - from:   YYYY-MM-DD (required when preset=custom)
  *   - to:     YYYY-MM-DD (required when preset=custom)
  *
@@ -84,7 +85,7 @@ class ReportController extends Controller
         // bill is counted under exactly one user.
         $firstApproverSub = DB::table('bill_comments as bc1')
             ->select('bc1.bill_id', 'bc1.user_id')
-            ->where('bc1.steps', 1)
+            ->where('bc1.steps', 2)
             ->where(function ($q) {
                 $q->whereNull('bc1.canceled')->orWhere('bc1.canceled', 0);
             })
@@ -92,7 +93,7 @@ class ReportController extends Controller
             ->whereRaw('bc1.id = (
                 SELECT MIN(bc2.id) FROM bill_comments bc2
                 WHERE bc2.bill_id = bc1.bill_id
-                  AND bc2.steps = 1
+                  AND bc2.steps = 2
                   AND (bc2.canceled IS NULL OR bc2.canceled = 0)
                   AND bc2.deleted_at IS NULL
             )');
@@ -131,10 +132,15 @@ class ReportController extends Controller
      */
     private function resolveRange(Request $request): array
     {
-        $preset = $request->query('preset', 'this_month');
+        $preset = $request->query('preset', 'all_time');
         $now    = Carbon::now();
 
         switch ($preset) {
+            case 'all_time':
+                return [
+                    Carbon::parse('2000-01-01')->startOfDay(),
+                    $now->copy()->endOfDay(),
+                ];
             case 'today':
                 return [$now->copy()->startOfDay(), $now->copy()->endOfDay()];
             case 'yesterday':
@@ -149,6 +155,13 @@ class ReportController extends Controller
                 return [$now->copy()->startOfMonth(), $now->copy()->endOfMonth()];
             case 'last_month':
                 $m = $now->copy()->subMonthNoOverflow();
+                return [$m->copy()->startOfMonth(), $m->copy()->endOfMonth()];
+            case 'month':
+                $month = $request->query('month');
+                if (!$month || !preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) {
+                    abort(response()->json(['success' => false, 'message' => 'month=YYYY-MM is required for preset=month'], 422));
+                }
+                $m = Carbon::createFromFormat('!Y-m', $month);
                 return [$m->copy()->startOfMonth(), $m->copy()->endOfMonth()];
             case 'custom':
                 $from = $request->query('from');

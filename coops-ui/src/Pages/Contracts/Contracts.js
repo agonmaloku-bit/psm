@@ -90,7 +90,8 @@ export default {
                     department: null,
                     procurement_officer: null,
                     responsible_person: null,
-                    contract_type: null
+                    contract_type: null,
+                    created_by: null
                 }
             },
             selectNotifyDay: null,
@@ -671,6 +672,14 @@ export default {
             },
             set: function (value) {
                 this.query.search.contract_type = value
+            }
+        },
+        searchCreatedBy: {
+            get: function () {
+                return this.query.search.created_by
+            },
+            set: function (value) {
+                this.query.search.created_by = value
             }
         }
     },
@@ -1462,6 +1471,12 @@ export default {
                     this.query.search.status.id = this.$route.query.status;  
                     // console.log(this.query.search.status.id)
             }
+            if (this.$route.query.department != null) {
+                this.query.search.department = { id: parseInt(this.$route.query.department) };
+            }
+            if (this.$route.query.contract_type != null) {
+                this.query.search.contract_type = { id: parseInt(this.$route.query.contract_type) };
+            }
              
             return this.query;
         },
@@ -1702,6 +1717,9 @@ export default {
         showSearch() {
             this.search = !this.search
             this.fetchAllCompanies()
+            if (!this.userList || !this.userList.length) {
+                try { this.fetchAllUsers(); } catch (e) { /* non-fatal */ }
+            }
         },
         onSubmitSearch() {
             this.fetchAllContracts(this.query)

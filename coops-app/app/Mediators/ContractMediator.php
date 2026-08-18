@@ -629,7 +629,51 @@ class ContractMediator implements ContractMediatorInterface
                 'canceled' => true
             ]);
         }
-        $this->sendMail($contract->id, 2, $user->first_name . " " . $user->last_name);
+
+        $contractFull = $this->contractRepository->findById($contract->id);
+        $userName = $user->first_name . " " . $user->last_name;
+        $mailClass = new \App\Mail\ContractCanceled($contractFull, $userName);
+        $notifiedEmails = [];
+
+        // Notify via workflow template roles
+        $template = $this->workflowEngine->resolveTemplate($contract, 'contract');
+        if ($template) {
+            foreach ($template->steps as $step) {
+                if (!empty($step->notify_roles)) {
+                    $emails = $this->workflowEngine->getNotificationRecipients($step);
+                    foreach ($emails as $email) {
+                        if (!in_array($email, $notifiedEmails)) {
+                            try {
+                                \Mail::to($email)->send(clone $mailClass);
+                                $notifiedEmails[] = $email;
+                            } catch (\Throwable $e) {
+                                \Log::warning('ContractCanceled mail failed: ' . $e->getMessage());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Notify responsible person
+        if ($contract->responsiblePerson && !in_array($contract->responsiblePerson->email, $notifiedEmails)) {
+            try {
+                \Mail::to($contract->responsiblePerson->email)->send(clone $mailClass);
+                $notifiedEmails[] = $contract->responsiblePerson->email;
+            } catch (\Throwable $e) {
+                \Log::warning('ContractCanceled mail failed: ' . $e->getMessage());
+            }
+        }
+
+        // Notify creator
+        if ($contract->createdBy && !in_array($contract->createdBy->email, $notifiedEmails)) {
+            try {
+                \Mail::to($contract->createdBy->email)->send(clone $mailClass);
+            } catch (\Throwable $e) {
+                \Log::warning('ContractCanceled mail failed: ' . $e->getMessage());
+            }
+        }
+
         return ResponseResource::make(['success' => true]);
     }
     
@@ -675,12 +719,52 @@ class ContractMediator implements ContractMediatorInterface
         $activeContracts = $this->contractRepository->getAllActiveContracts($userId);
         $expiredContracts = $this->contractRepository->getAllExpiredContracts($userId);
         $expiringContracts = $this->contractRepository->getAllExpiringContracts($userId);
-        
+
+        // Build scoped base query (same role-based visibility as the counts above)
+        $user = Auth::user();
+        $query = \App\Models\Contract::query()->whereNull('contracts.deleted_at');
+        if (!$user->hasRole([\App\Enums\Roles::LEGAL_OFFICE, \App\Enums\Roles::EXECUTIVE_DIRECTOR, \App\Enums\Roles::SUPER_ADMIN])) {
+            $query->where('created_by', $userId);
+        }
+
+        $now = \Carbon\Carbon::now();
+        $oneMonth = \Carbon\Carbon::now()->addMonth();
+
+        // Per-department breakdown
+        $deptRows = (clone $query)
+            ->join('departments', 'contracts.department_id', '=', 'departments.id')
+            ->selectRaw('departments.id as dept_id, departments.name as dept_name,
+                SUM(CASE WHEN contracts.status = 5 AND contracts.deadline_to >= ? THEN 1 ELSE 0 END) as active,
+                SUM(CASE WHEN contracts.deadline_to >= ? AND contracts.deadline_to <= ? THEN 1 ELSE 0 END) as expiring,
+                SUM(CASE WHEN contracts.deadline_to < ? THEN 1 ELSE 0 END) as expired',
+                [$now, $now, $oneMonth, $now])
+            ->groupBy('departments.id', 'departments.name')
+            ->orderBy('departments.name')
+            ->get()
+            ->map(fn ($r) => ['id' => $r->dept_id, 'name' => $r->dept_name, 'active' => (int)$r->active, 'expiring' => (int)$r->expiring, 'expired' => (int)$r->expired])
+            ->values();
+
+        // Per-contract-type breakdown
+        $typeRows = (clone $query)
+            ->join('contract_types', 'contracts.contract_type_id', '=', 'contract_types.id')
+            ->selectRaw('contract_types.id as type_id, contract_types.name as type_name,
+                SUM(CASE WHEN contracts.status = 5 AND contracts.deadline_to >= ? THEN 1 ELSE 0 END) as active,
+                SUM(CASE WHEN contracts.deadline_to >= ? AND contracts.deadline_to <= ? THEN 1 ELSE 0 END) as expiring,
+                SUM(CASE WHEN contracts.deadline_to < ? THEN 1 ELSE 0 END) as expired',
+                [$now, $now, $oneMonth, $now])
+            ->groupBy('contract_types.id', 'contract_types.name')
+            ->orderBy('contract_types.name')
+            ->get()
+            ->map(fn ($r) => ['id' => $r->type_id, 'name' => $r->type_name, 'active' => (int)$r->active, 'expiring' => (int)$r->expiring, 'expired' => (int)$r->expired])
+            ->values();
+
         return [
             'allContracts' => $allContracts,
             'activeContracts' => $activeContracts,
             'expiredContracts' => $expiredContracts,
-            'expiringContracts' => $expiringContracts
+            'expiringContracts' => $expiringContracts,
+            'byDepartment' => $deptRows,
+            'byContractType' => $typeRows,
         ];
     }
 

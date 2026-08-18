@@ -276,14 +276,13 @@
                                         v-model="selectedPermissions"
                                         :options="permissionList"
                                         :multiple="true"
-                                        :taggable="true"
-                                        tag-placeholder="Select permissions"
-                                        placeholder="Type to search or add a permission"
+                                        :close-on-select="false"
+                                        :clear-on-select="false"
+                                        placeholder="Type to search a permission"
                                         label="name"
                                         track-by="id"
                                         :class="{ 'is-invalid': checkIfFieldHasErrors(errors, 'permissions', this.isUpdating) }"
                                         aria-describedby="permissions-error"
-                                        :fixed="true"
                                 />
                                 <span
                                         v-if="checkIfFieldHasErrors(errors, 'permissions', this.isUpdating)"

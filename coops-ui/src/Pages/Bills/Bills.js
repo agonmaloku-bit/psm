@@ -158,6 +158,7 @@ export default {
       canEdit: false,
       canDelete: false,
       canApprove: false,
+      canArchive: false,
       canAiVerify: false,
       canPrintAll: false,
       canBillAttachments: false,
@@ -234,6 +235,7 @@ export default {
       errors: ERRORS_GETTER,
       billApprove: "billApprove",
       billCancel: "billCancel",
+      billArchive: "billArchive",
     }),
 
     ...mapGetters("users", {
@@ -707,6 +709,14 @@ export default {
         this.query.search.bill_type = value;
       },
     },
+    searchCreatedBy: {
+      get: function () {
+        return this.query.search.created_by;
+      },
+      set: function (value) {
+        this.query.search.created_by = value;
+      },
+    },
     hasInsertFiles() {
       // Reactive proxy: labelFilesNameInsert changes whenever the user picks/clears files.
       if (!this.labelFilesNameInsert || this.labelFilesNameInsert === 'Choose a file') return false;
@@ -767,6 +777,8 @@ export default {
       resetBillApprove: "resetBillApprove",
       cancelBill: "cancelBill",
       resetBillCancel: "resetBillCancel",
+      archiveBill: "archiveBill",
+      resetBillArchive: "resetBillArchive",
       fetchBillTimeline: "fetchBillTimeline",
 
       setDepartmentForCompanyNullAction: "setDepartmentForCompanyNullAction",
@@ -1111,12 +1123,37 @@ export default {
       if (!file) return;
       const fileId = file.file_id || file.id;
       BillDataService.attachment(fileId).then((res) => {
-        const blob = new Blob([res.data]);
+        const ext = String(file.file_extension || "").toLowerCase();
+        const contentType = String(res.headers["content-type"] || "").toLowerCase();
+        const inlineExt = ["pdf", "png", "jpg", "jpeg", "gif", "webp", "bmp", "svg", "txt", "csv", "json", "xml", "html"];
+        const canPreview =
+          inlineExt.includes(ext) ||
+          contentType.startsWith("image/") ||
+          contentType.startsWith("text/") ||
+          contentType.includes("application/pdf") ||
+          contentType.includes("application/json") ||
+          contentType.includes("application/xml");
+
+        const blob = new Blob([res.data], { type: contentType || "application/octet-stream" });
         const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
+
+        if (canPreview) {
+          const popup = window.open(url, "_blank");
+          if (!popup) {
+            const link = document.createElement("a");
+            link.href = url;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+          }
+          setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+          return;
+        }
+
+        const link = document.createElement("a");
         link.href = url;
-        const ext = file.file_extension ? '.' + file.file_extension : '';
-        link.setAttribute('download', (file.file_name || fileId) + (file.file_name ? '' : ext));
+        const extSuffix = file.file_extension ? "." + file.file_extension : "";
+        link.setAttribute("download", (file.file_name || fileId) + (file.file_name ? "" : extSuffix));
         document.body.appendChild(link);
         link.click();
         link.remove();
@@ -1570,6 +1607,25 @@ export default {
       }
     },
 
+    async onArchive(id) {
+      const { value: comment, isConfirmed: isConfirmed } =
+        await this.$swal.fire({
+          input: "textarea",
+          inputLabel: this.$t('bills.archiveBill'),
+          cancelButtonText: this.$t('common.cancel'),
+          confirmButtonText: this.$t('bills.archiveBill'),
+          confirmButtonColor: "#6c757d",
+          inputPlaceholder: this.$t('common.addComment'),
+          inputAttributes: {
+            "aria-label": "Add a comment",
+          },
+          showCancelButton: true,
+        });
+      if (isConfirmed) {
+        this.archiveBill({ id: id, comment: comment || undefined });
+      }
+    },
+
     onFileInsert() {
       let files = this.$refs.filesInsert.files;
       this.changeFileLabels(files, "labelFilesNameInsert");
@@ -1685,6 +1741,9 @@ export default {
       if (this.$route.query.status != null) {
         this.query.search.status.id = this.$route.query.status;
       }
+      if (this.$route.query.department != null) {
+        this.query.search.department = { id: parseInt(this.$route.query.department) };
+      }
 
       return this.query;
     },
@@ -1712,6 +1771,8 @@ export default {
         return "Printed & Closed";
       } else if (status == 7) {
         return "Delivered to Finances";
+      } else if (status == 8) {
+        return "ARCHIVED";
       }
     },
 
@@ -1940,6 +2001,15 @@ export default {
       }
       return (this.canGenerateReport = false);
     },
+    checkIfUserHasPermissionToArchive() {
+      const permission = "Bill Archive";
+      let p1 = this.rolePermissions.filter((p) => p.name === permission);
+      let p2 = this.directPermissions.filter((p) => p.name === permission);
+      if (p1.length >= 1 || p2.length >= 1) {
+        return (this.canArchive = true);
+      }
+      return (this.canArchive = false);
+    },
     checkIfUserHasPermissionToPrint() {
       const roleName = this.user.roles[0].name;
       const deptName = this.user.department ? this.user.department.name : '';
@@ -2162,9 +2232,17 @@ export default {
     },
 
     isEligibleForReport(bill) {
-      // Eligible for procesverbal: Pending (2), Approved CEO (3), Approved Admin (5), Printed & Closed (6)
-      // NOT 7 (Delivered to Finances) — those are already done
-      return bill.status == 2 || bill.status == 3 || bill.status == 5 || bill.status == 6;
+      // Eligible for procesverbal:
+      // - Pending (2)
+      // - Approved from CEO (3)
+      // - Requested (1) only if department is CEO (assigned directly to CEO)
+      if (bill.status == 2 || bill.status == 3) {
+        return true;
+      }
+      if (bill.status == 1 && bill.assigned_dep_id === 'CEO') {
+        return true;
+      }
+      return false;
     },
     toggleBillSelection(billId) {
       const idx = this.selectedBillIds.indexOf(billId);
@@ -2363,6 +2441,8 @@ export default {
       this.search = !this.search;
       this.fetchAllBills();
       if (this.canShowSuppliers) this.fetchAllSuppliers();
+      this.fetchAllDepartments();
+      this.fetchAllUsers();
     },
 
     async onSubmitSearch() {
@@ -2379,6 +2459,12 @@ export default {
     '$route.query.status': function (newStatus) {
       if (this.canShowAll) {
         this.query.search.status.id = newStatus != null ? newStatus : 0;
+        this.fetchAllBills(this.query);
+      }
+    },
+    '$route.query.department': function (newDept) {
+      if (this.canShowAll) {
+        this.query.search.department = newDept != null ? { id: parseInt(newDept) } : null;
         this.fetchAllBills(this.query);
       }
     },
@@ -2449,6 +2535,25 @@ export default {
       }
       this.resetBillCancel();
     },
+    billArchive: function () {
+      if (this.billArchive == "success") {
+        this.$swal.fire({
+          text: this.$t('bills.billArchived'),
+          icon: "success",
+          timer: 10000,
+        });
+        this.fetchAllBills(this.query);
+        this.modalInfoActive = false;
+      }
+      if (this.billArchive == "error") {
+        this.$swal.fire({
+          text: this.$t('bills.billArchiveError'),
+          icon: "error",
+          timer: 10000,
+        });
+      }
+      this.resetBillArchive();
+    },
     billsPaginatedData: function () {
       let params = this.$route.query;
 
@@ -2509,6 +2614,7 @@ export default {
     this.checkIfUserHasPermissionToAiVerify();
     this.checkIfUserHasPermissionToPrint();
     this.checkIfUserHasPermissionToGenerateReport();
+    this.checkIfUserHasPermissionToArchive();
     this.checkIfUserHasPermissionToBillAttachments();
     this.checkIfUserHasPermissionToShowSuppliers();
     this.checkIfUserHasPermissionToAddSupplier();

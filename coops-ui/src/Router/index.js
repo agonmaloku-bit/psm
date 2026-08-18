@@ -35,6 +35,7 @@ import Permissions from "../Pages/Permissions/Permissions.vue";
 import ContractDashboard from "../Pages/ContractDashboard/ContractDashboard.vue";
 import BillsDashboard from "../Pages/BillsDashboard/BillsDashboard.vue";
 import BillReports from "../Pages/BillReports/BillReports.vue";
+import ArchivedBills from "../Pages/ArchivedBills/ArchivedBills.vue";
 import AggregateReport from "../Pages/Reports/AggregateReport.vue";
 import AiSettings from "../Pages/AiSettings/AiSettings.vue";
 import EmailNotification from "../Pages/EmailNotification/EmailNotification.vue";
@@ -262,6 +263,14 @@ const routes = [
         path: "/platform/apps/bills",
         name: "apps_bills_invoice",
         component: Bills,
+        meta: {
+          requiresAuth: true,
+        },
+      },
+      {
+        path: "/platform/apps/bills/archive",
+        name: "bills_archive",
+        component: ArchivedBills,
         meta: {
           requiresAuth: true,
         },

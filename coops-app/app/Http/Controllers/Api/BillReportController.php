@@ -16,8 +16,8 @@ class BillReportController extends Controller
 {
     /**
      * Generate a Procesverbal PDF for a set of selected bills.
-     * Eligible bills: status 2 (Pending) or status 3 (Approved from CEO).
-     * After generation, all included bills are marked as Printed & Closed (status=6).
+     * Eligible bills: status 2 (Pending), status 3 (Approved from CEO),
+     * or status 1 (Requested) if assigned to the CEO department.
      *
      * POST /admin/bills/report
      * Body: { "bill_ids": [1, 2, 3] }
@@ -36,17 +36,27 @@ class BillReportController extends Controller
             'bill_ids.*' => 'integer|exists:bills,id',
         ]);
 
-        // Load bills — eligible statuses: Pending (2), Approved CEO (3), Approved Admin (5), Printed & Closed (6)
-        $bills = Bill::with(['supplierName', 'departmentName.company', 'createdBy'])
+        // Load bills — eligible statuses:
+        // - Pending (2), Approved from CEO (3)
+        // - Requested (1) only if assigned to the "CEO" department (assigned directly to CEO)
+        $bills = Bill::with(['supplierName', 'departmentName.company', 'createdBy', 'comments'])
             ->whereIn('id', $request->bill_ids)
-            ->whereIn('status', [2, 3, 5, 6])
+            ->where(function ($q) {
+                $q->whereIn('status', [2, 3])
+                  ->orWhere(function ($q2) {
+                      $q2->where('status', 1)
+                         ->whereHas('departmentName', function ($q3) {
+                             $q3->where('name', 'CEO');
+                         });
+                  });
+            })
             ->whereNull('deleted_at')
             ->get();
 
         if ($bills->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'No eligible bills found. Bills must be Pending, Approved, or Printed & Closed status.',
+                'message' => 'No eligible bills found. Bills must be Pending, Approved from CEO, or Requested with CEO department.',
             ], 422);
         }
 

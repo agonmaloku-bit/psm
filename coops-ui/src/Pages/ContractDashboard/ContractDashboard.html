@@ -96,5 +96,137 @@
             </div>
         </div>
 
+        <!-- By Department -->
+        <div class="card mt-3" v-if="!loading && allData && allData.byDepartment && allData.byDepartment.length">
+            <div class="card-header">
+                <h3 class="card-title" style="font-weight:700;">
+                    <i class="fas fa-building mr-2 text-primary"></i>
+                    {{ $t('contractDashboard.byDepartment') }}
+                </h3>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-striped table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>{{ $t('common.department') }}</th>
+                            <th class="text-center">
+                                <span class="badge badge-success">{{ $t('dashboard.activeContracts') }}</span>
+                            </th>
+                            <th class="text-center">
+                                <span class="badge badge-warning">{{ $t('dashboard.expiringContracts') }}</span>
+                            </th>
+                            <th class="text-center">
+                                <span class="badge badge-danger">{{ $t('dashboard.expiredContracts') }}</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="dept in allData.byDepartment" :key="'dept-' + dept.id">
+                            <td>
+                                <i class="fas fa-building text-muted mr-1" style="font-size:0.8rem;"></i>
+                                {{ dept.name }}
+                            </td>
+                            <td class="text-center">
+                                <router-link
+                                    v-if="dept.active > 0"
+                                    :to="{ name: 'contracts', query: { status: 5, department: dept.id } }"
+                                    class="badge badge-success"
+                                    style="font-size:0.85rem;min-width:36px;display:inline-block;">
+                                    {{ dept.active }}
+                                </router-link>
+                                <span v-else class="text-muted">0</span>
+                            </td>
+                            <td class="text-center">
+                                <router-link
+                                    v-if="dept.expiring > 0"
+                                    :to="{ name: 'contracts', query: { status: 6, department: dept.id } }"
+                                    class="badge badge-warning"
+                                    style="font-size:0.85rem;min-width:36px;display:inline-block;">
+                                    {{ dept.expiring }}
+                                </router-link>
+                                <span v-else class="text-muted">0</span>
+                            </td>
+                            <td class="text-center">
+                                <router-link
+                                    v-if="dept.expired > 0"
+                                    :to="{ name: 'contracts', query: { status: 7, department: dept.id } }"
+                                    class="badge badge-danger"
+                                    style="font-size:0.85rem;min-width:36px;display:inline-block;">
+                                    {{ dept.expired }}
+                                </router-link>
+                                <span v-else class="text-muted">0</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- By Contract Type -->
+        <div class="card mt-3" v-if="!loading && allData && allData.byContractType && allData.byContractType.length">
+            <div class="card-header">
+                <h3 class="card-title" style="font-weight:700;">
+                    <i class="fas fa-file-signature mr-2 text-info"></i>
+                    {{ $t('contractDashboard.byContractType') }}
+                </h3>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-striped table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>{{ $t('contractDashboard.contractType') }}</th>
+                            <th class="text-center">
+                                <span class="badge badge-success">{{ $t('dashboard.activeContracts') }}</span>
+                            </th>
+                            <th class="text-center">
+                                <span class="badge badge-warning">{{ $t('dashboard.expiringContracts') }}</span>
+                            </th>
+                            <th class="text-center">
+                                <span class="badge badge-danger">{{ $t('dashboard.expiredContracts') }}</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="ct in allData.byContractType" :key="'ct-' + ct.id">
+                            <td>
+                                <i class="fas fa-file-signature text-muted mr-1" style="font-size:0.8rem;"></i>
+                                {{ ct.name }}
+                            </td>
+                            <td class="text-center">
+                                <router-link
+                                    v-if="ct.active > 0"
+                                    :to="{ name: 'contracts', query: { status: 5, contract_type: ct.id } }"
+                                    class="badge badge-success"
+                                    style="font-size:0.85rem;min-width:36px;display:inline-block;">
+                                    {{ ct.active }}
+                                </router-link>
+                                <span v-else class="text-muted">0</span>
+                            </td>
+                            <td class="text-center">
+                                <router-link
+                                    v-if="ct.expiring > 0"
+                                    :to="{ name: 'contracts', query: { status: 6, contract_type: ct.id } }"
+                                    class="badge badge-warning"
+                                    style="font-size:0.85rem;min-width:36px;display:inline-block;">
+                                    {{ ct.expiring }}
+                                </router-link>
+                                <span v-else class="text-muted">0</span>
+                            </td>
+                            <td class="text-center">
+                                <router-link
+                                    v-if="ct.expired > 0"
+                                    :to="{ name: 'contracts', query: { status: 7, contract_type: ct.id } }"
+                                    class="badge badge-danger"
+                                    style="font-size:0.85rem;min-width:36px;display:inline-block;">
+                                    {{ ct.expired }}
+                                </router-link>
+                                <span v-else class="text-muted">0</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 </section>

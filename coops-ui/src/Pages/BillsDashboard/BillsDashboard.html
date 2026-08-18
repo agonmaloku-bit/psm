@@ -58,6 +58,35 @@
                 </div>
             </div>
 
+            <!-- Requested bills by department -->
+            <div class="card mt-2 mb-3" v-if="departments.length">
+                <div class="card-header">
+                    <h3 class="card-title" style="font-size:0.9rem;font-weight:700;">
+                        <i class="fas fa-building mr-2" style="color:#0ea5e9;"></i>
+                        {{ $t('billsDashboard.requestedByDept') }}
+                    </h3>
+                </div>
+                <div class="card-body p-0">
+                    <div class="dept-grid">
+                        <router-link
+                            v-for="dept in departments"
+                            :key="dept.id"
+                            :to="{ path: '/platform/apps/bills', query: { status: 1, department: dept.id } }"
+                            class="dept-card"
+                        >
+                            <div class="dept-card-icon">
+                                <i class="fas fa-building"></i>
+                            </div>
+                            <div class="dept-card-body">
+                                <div class="dept-card-name">{{ dept.name }}</div>
+                                <div class="dept-card-count">{{ dept.count }} {{ $t('billsDashboard.statusRequested').toLowerCase() }}</div>
+                            </div>
+                            <div class="dept-card-badge">{{ dept.count }}</div>
+                        </router-link>
+                    </div>
+                </div>
+            </div>
+
             <!-- Status breakdown bar -->
             <div class="card mt-2">
                 <div class="card-header">

@@ -35,7 +35,7 @@ class BillStoreRequest extends FormRequest
             'files.*' => ['nullable', 'mimes:' . implode(',', FileTypes::getAllowedFileTypes()), 'max:25000'],
             'bill_no' => 'required',
             'supplier' => 'required',
-            'description' => 'required',
+            'description' => 'nullable',
         ];
     }
 

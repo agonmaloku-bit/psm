@@ -23,3 +23,18 @@ coops-app/bootstrap/cache/
 # OS
 .DS_Store
 Thumbs.db
+
+# Server home-dir artifacts (not part of the project)
+.bash_logout
+.bashrc
+.profile
+.cache/
+.config/
+.local/
+.npm/
+.coops-source-url
+.coops-source-subdir
+coops-app/.coops-source-url
+coops-app/.coops-source-subdir
+coops-ui/.coops-source-url
+coops-ui/.coops-source-subdir

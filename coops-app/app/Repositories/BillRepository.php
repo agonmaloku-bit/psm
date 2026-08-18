@@ -51,9 +51,26 @@ class BillRepository extends BaseRepository implements BillRepositoryInterface
         return $query;
     }
 
+    /**
+     * Apply optional department and created_by search filters.
+     */
+    private function applySearchFilters($query)
+    {
+        if (request()->has('department') && request()->input('department') !== null) {
+            $query->where('assigned_dep_id', request()->input('department'));
+        }
+        if (request()->has('created_by') && request()->input('created_by') !== null) {
+            $query->where('created_by', request()->input('created_by'));
+        }
+        return $query;
+    }
+
     public function getAll($request)
     {
-        $query = $this->model->withTables()->orderByDesc('id');
+        $query = $this->model->withTables()->orderByDesc('id')
+            ->where('status', '!=', \App\Enums\Status::BILL_ARCHIVED);
+
+        $this->applySearchFilters($query);
 
         if (request()->has('search_text') && request()->input('search_text') !== "null") {
             $searchText = request()->input('search_text');
@@ -112,6 +129,30 @@ class BillRepository extends BaseRepository implements BillRepositoryInterface
         }
     }
 
+    public function getArchived($request)
+    {
+        $query = $this->model->withTables()
+            ->where('status', \App\Enums\Status::BILL_ARCHIVED)
+            ->orderByDesc('id');
+
+        if (request()->has('search_text') && request()->input('search_text') !== "null") {
+            $searchText = request()->input('search_text');
+            $query->where(function ($q) use ($searchText) {
+                $q->where('id', 'LIKE', '%' . $searchText . '%')
+                    ->orWhere('type', 'LIKE', '%' . $searchText . '%')
+                    ->orWhere('value', 'LIKE', '%' . $searchText . '%')
+                    ->orWhere('bill_no', 'LIKE', '%' . $searchText . '%')
+                    ->orWhere('description', 'LIKE', '%' . $searchText . '%');
+            });
+        }
+
+        if ($request->has('page')) {
+            return $query->paginate(15);
+        } else {
+            return $query->get();
+        }
+    }
+
 
     // public function getAllByResponnsiblePersonId($id)
     // {
@@ -159,9 +200,11 @@ class BillRepository extends BaseRepository implements BillRepositoryInterface
         $query = $this->model
             ->withTables()
             ->with('createdBy')
+            ->where('status', '!=', \App\Enums\Status::BILL_ARCHIVED)
             ->orderByDesc('id');
 
         $this->applyDepartmentVisibility($query, $user);
+        $this->applySearchFilters($query);
 
         if (request()->has('search_status') && request()->input('search_status') !== null) {
             if (request()->input('search_status') != 0) {
@@ -182,9 +225,11 @@ class BillRepository extends BaseRepository implements BillRepositoryInterface
         $query = $this->model
             ->withTables()
             ->with('createdBy')
+            ->where('status', '!=', \App\Enums\Status::BILL_ARCHIVED)
             ->orderByDesc('id');
 
         $this->applyDepartmentVisibility($query, $user);
+        $this->applySearchFilters($query);
 
         if (request()->has('search_text') && request()->input('search_text') !== "null") {
             $searchText = request()->input('search_text');
@@ -222,9 +267,11 @@ class BillRepository extends BaseRepository implements BillRepositoryInterface
         $query = $this->model
             ->withTables()
             ->with('createdBy')
+            ->where('status', '!=', \App\Enums\Status::BILL_ARCHIVED)
             ->orderByDesc('id');
 
         $this->applyDepartmentVisibility($query, $user);
+        $this->applySearchFilters($query);
 
         if ($request->has('search_text') && $request->input('search_text') !== "null") {
             $searchText = $request->input('search_text');
@@ -268,6 +315,7 @@ class BillRepository extends BaseRepository implements BillRepositoryInterface
         $query = $this->model
             ->withTables()
             ->with('createdBy')
+            ->where('status', '!=', \App\Enums\Status::BILL_ARCHIVED)
             ->where(function ($q) use ($userId, $userDeptId) {
                 // Department visibility (same as other roles)
                 $q->where('created_by', $userId)
@@ -281,6 +329,8 @@ class BillRepository extends BaseRepository implements BillRepositoryInterface
                   ->orWhereIn('status', [2, 3]);
             })
             ->orderByDesc('id');
+
+        $this->applySearchFilters($query);
 
         if (request()->has('search_text') && request()->input('search_text') !== "null") {
             $searchText = request()->input('search_text');
@@ -328,9 +378,11 @@ class BillRepository extends BaseRepository implements BillRepositoryInterface
         $query = $this->model
             ->withTables()
             ->with('createdBy')
+            ->where('status', '!=', \App\Enums\Status::BILL_ARCHIVED)
             ->orderByDesc('id');
 
         $this->applyDepartmentVisibility($query, $user);
+        $this->applySearchFilters($query);
         if (request()->has('search_text') && request()->input('search_text') !== "null") {
             $searchText = request()->input('search_text');
 

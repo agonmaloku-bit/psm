@@ -65,7 +65,20 @@ class WorkflowEngine
         $hasRequiredRole = $user->hasRole($requiredRole) || $user->hasRole(Roles::SUPER_ADMIN);
 
         // Executive Director can act as Director Department for bills assigned to their own department
-        if (!$hasRequiredRole && $user->hasRole(Roles::EXECUTIVE_DIRECTOR)) {
+        if (!$hasRequiredRole
+            && $requiredRole === Roles::DIRECTOR_DEPARTMENT
+            && $user->hasRole(Roles::EXECUTIVE_DIRECTOR)) {
+            $entityDeptId = $entity->assigned_dep_id ?? null;
+            $userDeptId = $user->department_id ?? null;
+            if ($entityDeptId && $userDeptId && $entityDeptId == $userDeptId) {
+                $hasRequiredRole = true;
+            }
+        }
+
+        // Legal Office can act as Director Department for bills assigned to their own department
+        if (!$hasRequiredRole
+            && $requiredRole === Roles::DIRECTOR_DEPARTMENT
+            && $user->hasRole(Roles::LEGAL_OFFICE)) {
             $entityDeptId = $entity->assigned_dep_id ?? null;
             $userDeptId = $user->department_id ?? null;
             if ($entityDeptId && $userDeptId && $entityDeptId == $userDeptId) {

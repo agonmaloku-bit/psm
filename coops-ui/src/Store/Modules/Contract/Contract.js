@@ -116,6 +116,9 @@ const actions = {
         if(query.search.contract_type !== null && query.search.contract_type !== undefined){
             url = url + `&contract_type=${query.search.contract_type.id}`
         }
+        if (query.search.created_by !== null && query.search.created_by !== undefined) {
+            url = url + `&created_by=${query.search.created_by.id}`
+        }
         await ContractDataService.getAll(url)
             .then(res => {
                 const contracts = res.data.data;
@@ -168,6 +171,9 @@ const actions = {
         }
         if(query.search.contract_type !== null){
             url = url + `&contract_type=${query.search.contract_type.id}`
+        }
+        if (query.search.created_by !== null && query.search.created_by !== undefined) {
+            url = url + `&created_by=${query.search.created_by.id}`
         }
         await ContractDataService.getArchive(url)
             .then(res => {
@@ -306,6 +312,9 @@ const actions = {
         }
         if (query.search.responsible_person !== null) {
             url = url + `&responsible_person=${query.search.responsible_person.id}`
+        }
+        if (query.search.created_by !== null && query.search.created_by !== undefined) {
+            url = url + `&created_by=${query.search.created_by.id}`
         }
         ContractDataService.excel(url).then(response => {
             const type = response.headers['content-type'];

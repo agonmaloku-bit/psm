@@ -134,3 +134,71 @@
     border-radius: 50%;
     flex-shrink: 0;
 }
+
+/* Department grid */
+.dept-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0;
+}
+
+.dept-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    text-decoration: none;
+    color: inherit;
+    border-bottom: 1px solid #f1f5f9;
+    border-right: 1px solid #f1f5f9;
+    transition: background 0.15s;
+}
+
+.dept-card:hover {
+    background: #f8fafc;
+    text-decoration: none;
+    color: inherit;
+}
+
+.dept-card-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #e0f2fe;
+    color: #0ea5e9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.dept-card-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.dept-card-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dept-card-count {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 1px;
+}
+
+.dept-card-badge {
+    background: #0ea5e9;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.82rem;
+    padding: 2px 10px;
+    border-radius: 12px;
+    flex-shrink: 0;
+}

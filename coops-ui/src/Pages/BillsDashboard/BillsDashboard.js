@@ -19,6 +19,7 @@ export default {
                 delivered: 0,
                 total: 0,
             },
+            departments: [],
         };
     },
     computed: {
@@ -82,6 +83,7 @@ export default {
             BillDataService.dashboard()
                 .then((res) => {
                     this.stats = { ...this.stats, ...res.data };
+                    this.departments = res.data.departments || [];
                 })
                 .catch(() => {})
                 .finally(() => { this.loading = false; });

@@ -11,4 +11,5 @@ class Status
     const APPROVED = 5;
     const PRINTED_CLOSED = 6;
     const DELIVERED_TO_FINANCES = 7;
+    const BILL_ARCHIVED = 8;
 }

@@ -94,6 +94,14 @@ class BillController extends Controller
     {
         return $this->billMediator->cancelBill($id);
     }
+    public function archiveBill($id)
+    {
+        return $this->billMediator->archiveBill($id);
+    }
+    public function getArchivedBills(Request $request)
+    {
+        return $this->billMediator->getArchivedBills($request);
+    }
     public function export()
     {
         return $this->billMediator->exportToExcel();

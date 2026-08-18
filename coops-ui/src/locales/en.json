@@ -25,6 +25,8 @@
     "status": "Status",
     "active": "Active",
     "createdAt": "Created At:",
+    "createdBy": "Created by",
+    "department": "Department",
     "lastModifiedAt": "Last modified at:",
     "noData": "N/A",
     "id": "Id:",
@@ -99,6 +101,7 @@
     "billsInvoices": "Bills & Invoices",
     "billsDashboard": "Bills Dashboard",
     "allBills": "All Bills & Invoices",
+    "archivedBills": "Archived Bills",
     "procurement": "Procurement",
     "workflows": "Workflows",
     "contractTemplates": "Contract Templates",
@@ -171,7 +174,8 @@
     "statusApprovedAdmin": "Approved by Admin",
     "statusPrinted": "Printed & Closed",
     "statusCanceled": "Canceled",
-    "statusDelivered": "Delivered to Finances"
+    "statusDelivered": "Delivered to Finances",
+    "requestedByDept": "Requested Bills by Department"
   },
   "procurement": {
     "title": "Procurement Process",
@@ -227,7 +231,10 @@
   },
   "contractDashboard": {
     "title": "Contract Dashboard",
-    "subtitle": "Overview of all contracts: active, expiring, and expired."
+    "subtitle": "Overview of all contracts: active, expiring, and expired.",
+    "byDepartment": "Contracts by Department",
+    "byContractType": "Contracts by Contract Type",
+    "contractType": "Contract Type"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -392,6 +399,9 @@
     "deleteSuccess": "Bill has been deleted.",
     "updateSuccess": "Bill has been updated successfully!",
     "cancelBill": "Cancel bill",
+    "archiveBill": "Archive",
+    "billArchived": "Bill has been archived.",
+    "billArchiveError": "Error archiving bill.",
     "removeFile": "Remove file",
     "addSuccess": "Bill has been added successfully!",
     "requestApproved": "Request has been approved!",
@@ -765,13 +775,16 @@
   },
   "reports": {
     "filters": {
+      "allTime": "All time",
       "today": "Today",
       "yesterday": "Yesterday",
       "thisWeek": "This week",
       "lastWeek": "Last week",
       "thisMonth": "This month",
       "lastMonth": "Last month",
+      "specificMonth": "Specific month",
       "custom": "Custom",
+      "month": "Month",
       "from": "From",
       "to": "To",
       "apply": "Apply"

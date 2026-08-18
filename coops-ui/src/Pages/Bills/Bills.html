@@ -140,6 +140,33 @@
             </div>
 
             <div class="col-md-4">
+              <div class="form-group form-group-custom">
+                <label for="">{{ $t('common.department') }}</label>
+                <VueMultiselect
+                  v-model="searchDepartment"
+                  :options="departmentList"
+                  :placeholder="$t('common.department')"
+                  label="name"
+                  track-by="id"
+                />
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="form-group form-group-custom">
+                <label for="">{{ $t('common.createdBy') }}</label>
+                <VueMultiselect
+                  v-model="searchCreatedBy"
+                  :options="userList"
+                  :placeholder="$t('common.createdBy')"
+                  label="first_name"
+                  :custom-label="firstAndLastname"
+                  track-by="id"
+                />
+              </div>
+            </div>
+
+            <div class="col-md-4">
               <div class="form-group">
                 <label for="">{{ $t('bills.keywords') }}</label>
                 <div class="input-group">
@@ -314,6 +341,13 @@
               class="svg_icon delete ml-2"
               src="/img/delete.svg"
             />
+            <i
+              v-if="canArchive && (item.status === 1 || item.status === 2 || item.status === 3)"
+              @click="onArchive(item.id)"
+              class="fas fa-archive ml-2"
+              style="cursor:pointer;color:#6c757d;font-size:1.1rem"
+              :title="$t('bills.archiveBill')"
+            ></i>
             <i
               v-if="item.can_print"
               @click="showInfoModal(item.id)"
@@ -1032,6 +1066,17 @@
               </div>
             </div>
             <div v-else-if="canApprove"></div>
+          </div>
+          <div v-if="canArchive && (bill.status === 1 || bill.status === 2 || bill.status === 3)" class="mr-2">
+            <app-button
+              @click="onArchive(bill.id)"
+              type="button"
+              class="btn-default"
+              style="background:#6c757d;color:#fff;border-color:#6c757d"
+            >
+              <i class="fas fa-archive mr-1"></i>
+              {{ $t('bills.archiveBill') }}
+            </app-button>
           </div>
           <div class="mr-2" v-if="bill.can_print">
             <app-button @click="printData" type="button" class="btn-default">

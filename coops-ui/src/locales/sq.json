@@ -25,6 +25,8 @@
     "status": "Statusi",
     "active": "Aktiv",
     "createdAt": "Krijuar më:",
+    "createdBy": "Krijuar nga",
+    "department": "Departamenti",
     "lastModifiedAt": "Ndryshuar së fundmi:",
     "noData": "N/A",
     "id": "Id:",
@@ -99,6 +101,7 @@
     "billsInvoices": "Faturat",
     "billsDashboard": "Pasqyra e Faturave",
     "allBills": "Të gjitha Faturat",
+    "archivedBills": "Faturat e Arkivuara",
     "procurement": "Prokurimi",
     "workflows": "Rrjedhat e Punës",
     "contractTemplates": "Shabllont e Kontratës",
@@ -171,7 +174,8 @@
     "statusApprovedAdmin": "Miratuar nga Admin",
     "statusPrinted": "Printuar & Mbyllur",
     "statusCanceled": "Anuluar",
-    "statusDelivered": "Dorëzuar tek Financat"
+    "statusDelivered": "Dorëzuar tek Financat",
+    "requestedByDept": "Faturat e Kërkuara sipas Departamentit"
   },
   "procurement": {
     "title": "Procesi i Prokurimit",
@@ -227,7 +231,10 @@
   },
   "contractDashboard": {
     "title": "Pasqyra e Kontratave",
-    "subtitle": "Pamje e përgjithshme e kontratave: aktive, afrohen skadet dhe të skadume."
+    "subtitle": "Pamje e përgjithshme e kontratave: aktive, afrohen skadet dhe të skadume.",
+    "byDepartment": "Kontratat sipas Departamentit",
+    "byContractType": "Kontratat sipas Llojit të Kontratës",
+    "contractType": "Lloji i Kontratës"
   },
   "dashboard": {
     "title": "Paneli",
@@ -392,6 +399,9 @@
     "deleteSuccess": "Fatura u fshi.",
     "updateSuccess": "Fatura u përditësua me sukses!",
     "cancelBill": "Anulo faturën",
+    "archiveBill": "Arkivo",
+    "billArchived": "Fatura u arkivua.",
+    "billArchiveError": "Gabim gjatë arkivimit të faturës.",
     "removeFile": "Hiq skedarin",
     "workflow": {
       "lanesTitle": "Rrjedha",
@@ -768,13 +778,16 @@
   },
   "reports": {
     "filters": {
+      "allTime": "Të gjitha",
       "today": "Sot",
       "yesterday": "Dje",
       "thisWeek": "Këtë javë",
       "lastWeek": "Javën e kaluar",
       "thisMonth": "Këtë muaj",
       "lastMonth": "Muajin e kaluar",
+      "specificMonth": "Muaj specifik",
       "custom": "Periudhë",
+      "month": "Muaji",
       "from": "Prej",
       "to": "Deri",
       "apply": "Apliko"

@@ -1,0 +1,101 @@
+<div class="content-wrapper">
+  <div class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1>{{ $t('sidebar.archivedBills') }}</h1>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="content">
+    <div class="container-fluid">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex align-items-center">
+            <div class="mr-3">
+              <input
+                type="text"
+                class="form-control"
+                :placeholder="$t('common.search')"
+                v-model="searchText"
+                @keyup.enter="onSearch"
+                style="width: 250px"
+              />
+            </div>
+            <button class="btn btn-sm btn-primary" @click="onSearch">
+              <i class="fas fa-search"></i>
+            </button>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div v-if="loading" class="text-center p-4">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+          </div>
+          <div v-else-if="bills.length === 0" class="text-center p-4 text-muted">
+            {{ $t('bills.noResults') || 'No archived bills found.' }}
+          </div>
+          <table v-else class="table table-hover table-striped mb-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>{{ $t('bills.form.type') }}</th>
+                <th>{{ $t('bills.form.value') }}</th>
+                <th>{{ $t('bills.form.billNumber') }}</th>
+                <th>{{ $t('common.department') }}</th>
+                <th>{{ $t('common.supplier') }}</th>
+                <th>{{ $t('common.createdBy') }}</th>
+                <th>{{ $t('common.createdAt') }}</th>
+                <th>{{ $t('bills.step') }}</th>
+                <th>{{ $t('common.status') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(item, index) in bills" :key="item.id">
+                <td>{{ ((page - 1) * 15) + (index + 1) }}</td>
+                <td>{{ item.type }}</td>
+                <td>{{ item.value }}</td>
+                <td>{{ item.bill_no }}</td>
+                <td>{{ item.assigned_dep_id }}</td>
+                <td>{{ item.supplier }}</td>
+                <td>
+                  <span v-if="item.created_by">{{ item.created_by.first_name }} {{ item.created_by.last_name }}</span>
+                </td>
+                <td>{{ formatDate(item.created_at) }}</td>
+                <td>
+                  <span class="badge badge-secondary badge-pill">
+                    {{ $t('bills.step') }} {{ item.step }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge badge-secondary">{{ checkBillStatus(item.status) }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-footer" v-if="totalPages > 1">
+          <nav>
+            <ul class="pagination justify-content-center mb-0">
+              <li class="page-item" :class="{ disabled: page <= 1 }">
+                <a class="page-link" href="#" @click.prevent="goToPage(page - 1)">&laquo;</a>
+              </li>
+              <li
+                class="page-item"
+                v-for="p in totalPages"
+                :key="p"
+                :class="{ active: p === page }"
+              >
+                <a class="page-link" href="#" @click.prevent="goToPage(p)">{{ p }}</a>
+              </li>
+              <li class="page-item" :class="{ disabled: page >= totalPages }">
+                <a class="page-link" href="#" @click.prevent="goToPage(page + 1)">&raquo;</a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

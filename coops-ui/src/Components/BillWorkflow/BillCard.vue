@@ -10,8 +10,8 @@
             <div class="cw-card__head">
                 <div class="cw-card__title-wrap">
                     <div class="cw-card__serial">#{{ item.bill_no || item.id }}</div>
-                    <div class="cw-card__title" :title="item.name || item.description">
-                        {{ item.name || item.description || '—' }}
+                    <div class="cw-card__title" :title="cardTitle">
+                        {{ cardTitle }}
                     </div>
                 </div>
                 <div class="cw-card__head-actions">
@@ -148,6 +148,12 @@ export default {
                 return this.item.workflow_template.steps.length;
             }
             return 0;
+        },
+        cardTitle() {
+            const supplier = (this.item.supplier || '').toString().trim();
+            const invoice = (this.item.bill_no || '').toString().trim();
+            if (supplier && invoice) return `${supplier} - ${invoice}`;
+            return supplier || invoice || this.item.name || this.item.description || '—';
         }
     },
     methods: {

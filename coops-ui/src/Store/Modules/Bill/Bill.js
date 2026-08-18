@@ -59,6 +59,7 @@ const state = () => ({
   countBills: null,
   billApprove: false,
   billCancel: false,
+  billArchive: false,
 });
 
 const getters = {
@@ -79,6 +80,7 @@ const getters = {
   countBills: (state) => state.countBills,
   billApprove: (state) => state.billApprove,
   billCancel: (state) => state.billCancel,
+  billArchive: (state) => state.billArchive,
 };
 
 const actions = {
@@ -109,6 +111,12 @@ const actions = {
     }
     if (query.search.suppliers != null) {
         url = url + `&suppliers=${query.search.suppliers.id}`
+    }
+    if (query.search.department != null) {
+        url = url + `&department=${query.search.department.id}`
+    }
+    if (query.search.created_by != null) {
+        url = url + `&created_by=${query.search.created_by.id}`
     }
     // if (query.search) {
     //   url =
@@ -333,6 +341,26 @@ const actions = {
 
   resetBillCancel({ commit }) {
     commit("billCancelResponse", false);
+  },
+
+  async archiveBill({ commit }, bill) {
+    return BillDataService.archive(bill.id, bill.comment)
+      .then((res) => {
+        let result = res.data.data.success;
+        if (result === true) {
+          commit("billArchiveResponse", "success");
+        }
+        if (result === false) {
+          commit("billArchiveResponse", "error");
+        }
+      })
+      .catch(() => {
+        commit("billArchiveResponse", "error");
+      });
+  },
+
+  resetBillArchive({ commit }) {
+    commit("billArchiveResponse", false);
   },
 
   fetchBillTimeline(_ctx, id) {
@@ -576,6 +604,9 @@ const mutations = {
   },
   billCancelResponse: (state, res) => {
     state.billCancel = res;
+  },
+  billArchiveResponse: (state, res) => {
+    state.billArchive = res;
   },
   setNewBillInputNull(state) {
     state.newBill["name"] = null;

@@ -16,7 +16,7 @@
                             <span class="cwd-dot">·</span>
                             {{ bill && bill.type }}
                         </div>
-                        <h2 class="cwd-title">{{ (bill && (bill.name || bill.description)) || '—' }}</h2>
+                        <h2 class="cwd-title">{{ headerTitle }}</h2>
                         <div class="cwd-sub">
                             <span class="cwd-badge" :class="statusClass">
                                 <i class="fas" :class="statusIcon"></i>
@@ -394,6 +394,13 @@ export default {
             }
             return [];
         },
+        headerTitle() {
+            if (!this.bill) return '—';
+            const supplier = (this.bill.supplier || '').toString().trim();
+            const invoice = (this.bill.bill_no || '').toString().trim();
+            if (supplier && invoice) return `${supplier} - ${invoice}`;
+            return supplier || invoice || this.bill.name || this.bill.description || '—';
+        },
         statusLabel() {
             const map = {
                 1: 'Requested',
@@ -445,6 +452,13 @@ export default {
             if (!this.canApproveProp || !this.bill) return false;
             // Only act while bill is mid-workflow
             if (![1, 2].includes(this.bill.status)) return false;
+            // Trust the backend-computed authorization when available. It
+            // already accounts for role, workflow step, already-approved
+            // state and department-based fallbacks (Legal Office, Executive
+            // Director acting as Director Department for their own dept).
+            if (this.bill.can_approve === true) return true;
+            if (this.bill.can_approve === false) return false;
+            // Legacy fallback (used when can_approve is not yet in the response)
             const cur = this.steps.find(s => s.step_order === this.bill.step);
             if (!cur) return false;
             if (!this.currentUser || !this.currentUser.roles || !this.currentUser.roles.length) return false;

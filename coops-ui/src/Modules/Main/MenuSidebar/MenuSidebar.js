@@ -64,6 +64,9 @@ export default {
           { name: this.$t("sidebar.billsDashboard"), path: "/platform/bills-dashboard" },
           { name: this.$t("sidebar.allBills"),       path: "/platform/apps/bills" },
         ];
+        if (can("Bill Archive")) {
+          billChildren.push({ name: this.$t("sidebar.archivedBills"), path: "/platform/apps/bills/archive" });
+        }
         items.push({
           name: this.$t("sidebar.billsInvoices"),
           icon: "fas fa-file-invoice-dollar",

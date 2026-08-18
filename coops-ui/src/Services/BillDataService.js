@@ -79,6 +79,14 @@ class BillDataService {
     );
   }
 
+  archive(id, comment) {
+    return http.post(
+      `/admin/bills/${id}/archive`,
+      { comment: comment },
+      { headers: AuthHeader() }
+    );
+  }
+
   excel(query) {
     return http.get(`/admin/bills/export${query}`, {
       headers: AuthHeader(),

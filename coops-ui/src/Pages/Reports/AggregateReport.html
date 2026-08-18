@@ -48,6 +48,18 @@
             {{ $t('reports.filters.apply') }}
           </button>
         </div>
+        <div v-if="preset === 'month'" class="rep-custom">
+          <div class="rep-field">
+            <label>{{ $t('reports.filters.month') }}</label>
+            <input type="month" v-model="selectedMonth" class="form-control" />
+          </div>
+          <button type="button"
+                  class="rep-apply-btn"
+                  :disabled="!selectedMonth"
+                  @click="applyMonth">
+            {{ $t('reports.filters.apply') }}
+          </button>
+        </div>
         <div v-if="range.from" class="rep-range-info">
           <i class="far fa-calendar-alt mr-1"></i>
           {{ range.from }} &rarr; {{ range.to }}

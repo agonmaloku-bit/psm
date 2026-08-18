@@ -51,7 +51,18 @@ class BillResource extends JsonResource
 
                     // Executive Director can act as Director Department for bills
                     // assigned directly to their own department (no dept director exists there)
-                    if (!$canApprove && $currentUser->hasRole(Roles::EXECUTIVE_DIRECTOR)
+                    if (!$canApprove
+                        && $stepRoleName === Roles::DIRECTOR_DEPARTMENT
+                        && $currentUser->hasRole(Roles::EXECUTIVE_DIRECTOR)
+                        && $this->assigned_dep_id == $currentUser->department_id) {
+                        $canApprove = !$alreadyApproved;
+                    }
+
+                    // Legal Office can act as Director Department for bills assigned
+                    // to their own department (no dept director exists in Legal Office)
+                    if (!$canApprove
+                        && $stepRoleName === Roles::DIRECTOR_DEPARTMENT
+                        && $currentUser->hasRole(Roles::LEGAL_OFFICE)
                         && $this->assigned_dep_id == $currentUser->department_id) {
                         $canApprove = !$alreadyApproved;
                     }
@@ -71,7 +82,9 @@ class BillResource extends JsonResource
             }
 
             // --- workflow_step_label: human-readable "awaiting" string ---
-            if ($this->status == 7) {
+            if ($this->status == 8) {
+                $workflowStepLabel = 'archived';
+            } elseif ($this->status == 7) {
                 $workflowStepLabel = 'delivered_to_finances';
             } elseif ($this->status == 6) {
                 $workflowStepLabel = 'printed_closed';

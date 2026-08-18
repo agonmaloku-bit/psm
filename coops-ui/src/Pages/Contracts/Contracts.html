@@ -195,6 +195,19 @@
                                 />
                             </div>
                         </div>
+                        <div class="col-3">
+                            <div class="form-group">
+                                <label for="">{{ $t('common.createdBy') }}</label>
+                                <VueMultiselect
+                                        v-model="searchCreatedBy"
+                                        :options="userList"
+                                        :placeholder="$t('common.createdBy')"
+                                        label="first_name"
+                                        :custom-label="firstAndLastname"
+                                        track-by="id"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -248,14 +261,14 @@
                 <td>{{ ((query.page * 10) - 10) + (index + 1) }}</td>
                 <td>{{ item.serial_number }}</td>
                 <td>{{ item.name }}</td>
-                <td>{{ item.contract_type.name }}</td>
+                <td>{{ item.contract_type ? item.contract_type.name : '-' }}</td>
                 <td>{{ item.supplier ? item.supplier.name : item.name_of_contractor }}</td>
                 <td>{{ item.deadline_from }}</td>
                 <td>{{ item.deadline_to != null ? item.deadline_to : $t('contracts.noDeadline') }}</td>
-                <td v-if="canEdit">{{ item.responsible_person.first_name }} {{ item.responsible_person.last_name }}
+                <td v-if="canEdit">{{ item.responsible_person ? (item.responsible_person.first_name + ' ' + item.responsible_person.last_name) : '-' }}
                 </td>
                 <td>
-                    {{ item.created_by.first_name }} {{ item.created_by.last_name }}
+                    {{ item.created_by ? (item.created_by.first_name + ' ' + item.created_by.last_name) : '-' }}
                 </td>
                 <td v-if="item.step != null && canEdit">
                     <span class="badge badge-success badge-pill">
@@ -354,7 +367,7 @@
                 </div>
             </div>
         </div>
-        <div v-if="!isLoadingAll && contractsPaginatedData.data.length >= 1"
+        <div v-if="!isLoadingAll && contractsPaginatedData && contractsPaginatedData.data.length >= 1"
              class="vertical-center mt-2 mb-2 ml-3 row">
             <v-pagination
                     v-model="query.page"

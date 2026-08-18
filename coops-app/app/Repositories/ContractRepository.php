@@ -15,6 +15,40 @@ class ContractRepository extends BaseRepository implements ContractRepositoryInt
         parent::__construct($model);
     }
 
+    private function applySearchFilters($query)
+    {
+        if (request()->has('company')) {
+            if (request()->input('company') != null) {
+                $query->whereHas("responsiblePerson.department", function ($q) {
+                    $q->with("department")
+                        ->where('company_id', request()->input('company'));
+                });
+            }
+        }
+        if (request()->has('procurement_officer')) {
+            if (request()->input('procurement_officer') != null) {
+                $query->where('created_by', request()->input('procurement_officer'));
+            }
+        }
+        if (request()->has('responsible_person')) {
+            if (request()->input('responsible_person') != null) {
+                $query->where('responsible_person', request()->input('responsible_person'));
+            }
+        }
+        if (request()->has('department')) {
+            if (request()->input('department') != null) {
+                $query->whereHas("responsiblePerson.department", function ($q) {
+                    $q->where('department_id', request()->input('department'));
+                });
+            }
+        }
+        if (request()->has('created_by')) {
+            if (request()->input('created_by') != null) {
+                $query->where('created_by', request()->input('created_by'));
+            }
+        }
+    }
+
     public function getAll()
     {
         $query = $this->model->withTables();
@@ -64,32 +98,7 @@ class ContractRepository extends BaseRepository implements ContractRepositoryInt
             if (request()->input('end_date') != null)
                 $query->where('deadline_to', request()->input('end_date'));
         }
-        if (request()->has('company')) {
-            if (request()->has('procurement_officer')) {
-                if (request()->input('procurement_officer') != null) {
-                    $query->where('created_by', request()->input('procurement_officer'));
-                }
-            }
-            if (request()->has('responsible_person')) {
-                if (request()->input('responsible_person') != null) {
-                    $query->where('responsible_person', request()->input('responsible_person'));
-                }
-            }
-            if (request()->has('department')) {
-                if (request()->input('department') != null) {
-                    $query->whereHas("responsiblePerson.department", function ($q) {
-                        $q->where('department_id', request()->input('department'));
-                    });
-                }
-            } else {
-                if (request()->input('company') != null) {
-                    $query->whereHas("responsiblePerson.department", function ($q) {
-                        $q->with("department")
-                            ->where('company_id', request()->input('company'));
-                    });
-                }
-            }
-        }
+        $this->applySearchFilters($query);
 
         $query->where('status', '!=', 1);
 
@@ -152,49 +161,7 @@ class ContractRepository extends BaseRepository implements ContractRepositoryInt
             if (request()->input('end_date') != null)
                 $query->where('deadline_to', request()->input('end_date'));
         }
-        if (request()->has('company')) {
-            if (request()->has('procurement_officer')) {
-                if (request()->input('procurement_officer') != null) {
-                    $query->where('created_by', request()->input('procurement_officer'));
-                }
-            }
-            if (request()->has('responsible_person')) {
-                if (request()->input('responsible_person') != null) {
-                    $query->where('responsible_person', request()->input('responsible_person'));
-                }
-            }
-//            if (!request()->has('procurement_officer') || !request()->has('responsible_person')) {
-//                if (request()->has('department')) {
-//                    if (request()->input('department') != null) {
-//                        $query->whereHas("responsible_person.department", function ($q) {
-//                            $q->where('department_id', request()->input('department'));
-//                        });
-//                    }
-//                } else {
-//                    if (request()->input('company') != null) {
-//                        $query->whereHas("responsible_person.department", function ($q) {
-//                            $q->with("department")
-//                                ->where('company_id', request()->input('company'));
-//                        });
-//                    }
-//                }
-//            }
-            if (request()->has('department')) {
-                if (request()->input('department') != null) {
-                    $query->whereHas("responsiblePerson.department", function ($q) {
-                        $q->where('department_id', request()->input('department'));
-                    });
-                }
-            } 
-            else {
-                if (request()->input('company') != null) {
-                    $query->whereHas("responsiblePerson.department", function ($q) {
-                        $q->with("department")
-                            ->where('company_id', request()->input('company'));
-                    });
-                }
-            }
-        }
+        $this->applySearchFilters($query);
         $query->where('status', 1);
 
         if (request()->has('page')) {
@@ -263,32 +230,7 @@ class ContractRepository extends BaseRepository implements ContractRepositoryInt
             if (request()->input('end_date') != null)
                 $query->where('deadline_to', request()->input('end_date'));
         }
-        if (request()->has('company')) {
-            if (request()->has('procurement_officer')) {
-                if (request()->input('procurement_officer') != null) {
-                    $query->where('created_by', request()->input('procurement_officer'));
-                }
-            }
-            if (request()->has('responsible_person')) {
-                if (request()->input('responsible_person') != null) {
-                    $query->where('responsible_person', request()->input('responsible_person'));
-                }
-            }
-            if (request()->has('department')) {
-                if (request()->input('department') != null) {
-                    $query->whereHas("responsiblePerson.department", function ($q) {
-                        $q->where('department_id', request()->input('department'));
-                    });
-                }
-            } else {
-                if (request()->input('company') != null) {
-                    $query->whereHas("responsiblePerson.department", function ($q) {
-                        $q->with("department")
-                            ->where('company_id', request()->input('company'));
-                    });
-                }
-            }
-        }
+        $this->applySearchFilters($query);
         $query->where('step', 6);
         $query->where('status', 1);
 
@@ -368,32 +310,7 @@ class ContractRepository extends BaseRepository implements ContractRepositoryInt
             if (request()->input('end_date') != null)
                 $query->where('deadline_to', request()->input('end_date'));
         }
-        if (request()->has('company')) {
-            if (request()->has('procurement_officer')) {
-                if (request()->input('procurement_officer') != null) {
-                    $query->where('created_by', request()->input('procurement_officer'));
-                }
-            }
-            if (request()->has('responsible_person')) {
-                if (request()->input('responsible_person') != null) {
-                    $query->where('responsible_person', request()->input('responsible_person'));
-                }
-            }
-            if (request()->has('department')) {
-                if (request()->input('department') != null) {
-                    $query->whereHas("responsiblePerson.department", function ($q) {
-                        $q->where('department_id', request()->input('department'));
-                    });
-                }
-            } else {
-                if (request()->input('company') != null) {
-                    $query->whereHas("responsiblePerson.department", function ($q) {
-                        $q->with("department")
-                            ->where('company_id', request()->input('company'));
-                    });
-                }
-            }
-        }
+        $this->applySearchFilters($query);
 
         $query->where('status', '!=', 1);
 
@@ -474,32 +391,7 @@ class ContractRepository extends BaseRepository implements ContractRepositoryInt
             if (request()->input('end_date') != null)
                 $query->where('deadline_to', request()->input('end_date'));
         }
-        if (request()->has('company')) {
-            if (request()->has('procurement_officer')) {
-                if (request()->input('procurement_officer') != null) {
-                    $query->where('created_by', request()->input('procurement_officer'));
-                }
-            }
-            if (request()->has('responsible_person')) {
-                if (request()->input('responsible_person') != null) {
-                    $query->where('responsible_person', request()->input('responsible_person'));
-                }
-            }
-            if (request()->has('department')) {
-                if (request()->input('department') != null) {
-                    $query->whereHas("responsiblePerson.department", function ($q) {
-                        $q->where('department_id', request()->input('department'));
-                    });
-                }
-            } else {
-                if (request()->input('company') != null) {
-                    $query->whereHas("responsiblePerson.department", function ($q) {
-                        $q->with("department")
-                            ->where('company_id', request()->input('company'));
-                    });
-                }
-            }
-        }
+        $this->applySearchFilters($query);
         // $query->Where('step', '>=', '2');
         $user_id = auth()->user()->id;
         $query->where('status', '!=', 1);
@@ -582,32 +474,7 @@ class ContractRepository extends BaseRepository implements ContractRepositoryInt
             if (request()->input('end_date') != null)
                 $query->where('deadline_to', request()->input('end_date'));
         }
-        if (request()->has('company')) {
-            if (request()->has('procurement_officer')) {
-                if (request()->input('procurement_officer') != null) {
-                    $query->where('created_by', request()->input('procurement_officer'));
-                }
-            }
-            if (request()->has('responsible_person')) {
-                if (request()->input('responsible_person') != null) {
-                    $query->where('responsible_person', request()->input('responsible_person'));
-                }
-            }
-            if (request()->has('department')) {
-                if (request()->input('department') != null) {
-                    $query->whereHas("responsiblePerson.department", function ($q) {
-                        $q->where('department_id', request()->input('department'));
-                    });
-                }
-            } else {
-                if (request()->input('company') != null) {
-                    $query->whereHas("responsiblePerson.department", function ($q) {
-                        $q->with("department")
-                            ->where('company_id', request()->input('company'));
-                    });
-                }
-            }
-        }
+        $this->applySearchFilters($query);
         // Legacy chain: CEO sees from step 2+. With a workflow template the
         // template itself dictates whether CEO is on the path, so don't
         // filter those out by step.
@@ -695,32 +562,7 @@ class ContractRepository extends BaseRepository implements ContractRepositoryInt
             if (request()->input('end_date') != null)
                 $query->where('deadline_to', request()->input('end_date'));
         }
-        if (request()->has('company')) {
-            if (request()->has('procurement_officer')) {
-                if (request()->input('procurement_officer') != null) {
-                    $query->where('created_by', request()->input('procurement_officer'));
-                }
-            }
-            if (request()->has('responsible_person')) {
-                if (request()->input('responsible_person') != null) {
-                    $query->where('responsible_person', request()->input('responsible_person'));
-                }
-            }
-            if (request()->has('department')) {
-                if (request()->input('department') != null) {
-                    $query->whereHas("responsiblePerson.department", function ($q) {
-                        $q->where('department_id', request()->input('department'));
-                    });
-                }
-            } else {
-                if (request()->input('company') != null) {
-                    $query->whereHas("responsiblePerson.department", function ($q) {
-                        $q->with("department")
-                            ->where('company_id', request()->input('company'));
-                    });
-                }
-            }
-        }
+        $this->applySearchFilters($query);
         // Legacy chain: Legal Office sees from step 3+ (or contracts they
         // created). With a workflow template the template itself dictates
         // whether Legal Office is on the path.

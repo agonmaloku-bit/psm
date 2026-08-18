@@ -85,8 +85,10 @@ class Permissions
     const BILL_REQUEST = "Bill Request";
     const BILL_APPROVE = "Bill Approve";
     const BILL_CANCEL = "Bill Cancel";
+    const BILL_ARCHIVE = "Bill Archive";
     const BILL_ATTACHMENTS = "Bill Attachments";
     const BILL_VERIFY_AI = "Bill Verify AI";
+    const BILL_VIEW_ANY = "Bill View Any";
 
     const SUPPLIER_SHOW_ALL = "Supplier Show All";
     const SUPPLIER_SHOW = "Supplier Show";

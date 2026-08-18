@@ -2,7 +2,7 @@ import { useMeta } from 'vue-meta';
 import AppRoleDataService from '../../Services/AppRoleDataService';
 
 const APP_META = {
-    contract_process:    { path: '/platform/apps/contracts',       color: '#0ea5e9', live: true },
+    contract_process:    { path: '/platform/contract-dashboard',    color: '#0ea5e9', live: true },
     bills_invoice_process: { path: '/platform/bills-dashboard',      color: '#10b981', live: true },
     procurement_process: { path: '/platform/apps/procurement',     color: '#f59e0b', live: true },
     employee_portal:     { path: '/platform/apps/employee-portal', color: '#14b8a6', live: false },

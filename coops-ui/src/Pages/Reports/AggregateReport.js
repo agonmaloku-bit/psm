@@ -14,20 +14,23 @@ export default {
   },
   data() {
     return {
-      preset: "this_month",
+      preset: "all_time",
       customFrom: "",
       customTo: "",
+      selectedMonth: "",
       loading: false,
       rows: [],
       totals: { bill_count: 0, total_value: 0 },
       range: { from: "", to: "" },
       presets: [
+        { value: "all_time",   label: "allTime" },
         { value: "today",      label: "today" },
         { value: "yesterday",  label: "yesterday" },
         { value: "this_week",  label: "thisWeek" },
         { value: "last_week",  label: "lastWeek" },
         { value: "this_month", label: "thisMonth" },
         { value: "last_month", label: "lastMonth" },
+        { value: "month",      label: "specificMonth" },
         { value: "custom",     label: "custom" },
       ],
     };
@@ -43,12 +46,16 @@ export default {
   methods: {
     setPreset(value) {
       this.preset = value;
-      if (value !== "custom") {
+      if (value !== "custom" && value !== "month") {
         this.fetch();
       }
     },
     applyCustom() {
       if (!this.customFrom || !this.customTo) return;
+      this.fetch();
+    },
+    applyMonth() {
+      if (!this.selectedMonth) return;
       this.fetch();
     },
     async fetch() {
@@ -62,6 +69,13 @@ export default {
           }
           params.from = this.customFrom;
           params.to   = this.customTo;
+        }
+        if (this.preset === "month") {
+          if (!this.selectedMonth) {
+            this.loading = false;
+            return;
+          }
+          params.month = this.selectedMonth;
         }
         const res = await ReportsDataService.fetch(this.type, params);
         const payload = res.data || {};

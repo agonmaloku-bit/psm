@@ -134,7 +134,10 @@
         @endif
         @if(!$bill->approved_first && !$bill->approved_second) - @endif
       </td>
-      <td style="font-size:7px;">{{ $bill->description ? \Illuminate\Support\Str::limit($bill->description, 30) : '-' }}</td>
+      @php
+        $step2comment = $bill->comments->where('steps', '2')->last();
+      @endphp
+      <td style="font-size:7px;">{{ $step2comment ? \Illuminate\Support\Str::limit($step2comment->name, 30) : '-' }}</td>
     </tr>
     @endforeach
   </tbody>
