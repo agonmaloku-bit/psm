@@ -49,6 +49,7 @@ DB_USER="coops"
 DB_PASS=""
 ARBK_SCRAPER_URL="http://127.0.0.1:8181"
 CAPSOLVER_API_KEY="${CAPSOLVER_API_KEY:-}"
+WIZARD_RAW_BASE="${WIZARD_RAW_BASE:-https://raw.githubusercontent.com/agonmaloku-bit/psm/main/coops-installer/wizard}"
 
 SUBCMD="${1:-help}"
 [[ $# -gt 0 ]] && shift || true
@@ -57,6 +58,30 @@ SUBCMD="${1:-help}"
 log()  { printf '\033[1;34m[psm]\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m[warn]\033[0m  %s\n' "$*"; }
 fail() { printf '\033[1;31m[fail]\033[0m  %s\n' "$*"; exit 1; }
+
+# Copy wizard from alongside the script, or download it from the repo when the
+# script was fetched standalone via wget.
+install_wizard_files() {
+    local wizard_dst="$1"
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    mkdir -p "$wizard_dst"
+    if [[ -f "$script_dir/wizard/index.php" ]]; then
+        cp "$script_dir/wizard/index.php" "$wizard_dst/index.php"
+        cp "$script_dir/wizard/.htaccess" "$wizard_dst/.htaccess" 2>/dev/null || true
+    elif wget -qO "$wizard_dst/index.php.tmp" "$WIZARD_RAW_BASE/index.php" && [[ -s "$wizard_dst/index.php.tmp" ]]; then
+        log "Wizard folder not found next to script — downloaded from $WIZARD_RAW_BASE"
+        mv "$wizard_dst/index.php.tmp" "$wizard_dst/index.php"
+        wget -qO "$wizard_dst/.htaccess" "$WIZARD_RAW_BASE/.htaccess" || rm -f "$wizard_dst/.htaccess"
+    else
+        rm -f "$wizard_dst/index.php.tmp"
+        warn "Wizard files not found next to script and download from $WIZARD_RAW_BASE failed. Embedding minimal placeholder."
+        cat > "$wizard_dst/index.php" <<'PHP'
+<?php echo "Wizard payload missing — please re-download installer with the wizard/ folder."; ?>
+PHP
+    fi
+    chown -R "$WEB_USER":"$WEB_USER" "$wizard_dst"
+}
 
 remove_favicon_assets() {
     local public_dir="$1"
@@ -407,18 +432,8 @@ do_update() {
     fi
     if [[ ! -f "$APP_DIR/.env" ]]; then
         WIZARD_DST="$APP_DIR/public/install"
-        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
         log "Restoring web wizard at $WIZARD_DST ..."
-        mkdir -p "$WIZARD_DST"
-        if [[ -d "$SCRIPT_DIR/wizard" ]]; then
-            cp "$SCRIPT_DIR/wizard/index.php" "$WIZARD_DST/index.php"
-            cp "$SCRIPT_DIR/wizard/.htaccess" "$WIZARD_DST/.htaccess" 2>/dev/null || true
-        else
-            cat > "$WIZARD_DST/index.php" <<'PHP'
-<?php echo "Wizard payload missing — please re-download installer with the wizard/ folder."; ?>
-PHP
-        fi
-        chown -R "$WEB_USER":"$WEB_USER" "$WIZARD_DST"
+        install_wizard_files "$WIZARD_DST"
         fail "$APP_DIR/.env is missing. Open /install/ to recreate the app configuration, then rerun update."
     fi
     sudo -H -u "$INSTALL_USER" bash -c "cd '$APP_DIR' && composer install --no-interaction --no-dev --prefer-dist --optimize-autoloader"
@@ -699,19 +714,7 @@ JSON
     # 7. install web wizard
     WIZARD_DST="$APP_DIR/public/install"
     log "Installing web wizard at $WIZARD_DST ..."
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    if [[ -d "$SCRIPT_DIR/wizard" ]]; then
-        mkdir -p "$WIZARD_DST"
-        cp "$SCRIPT_DIR/wizard/index.php" "$WIZARD_DST/index.php"
-        cp "$SCRIPT_DIR/wizard/.htaccess" "$WIZARD_DST/.htaccess" 2>/dev/null || true
-    else
-        warn "Wizard files not found next to script (expected $SCRIPT_DIR/wizard/). Embedding minimal placeholder."
-        mkdir -p "$WIZARD_DST"
-        cat > "$WIZARD_DST/index.php" <<'PHP'
-<?php echo "Wizard payload missing — please re-download installer with the wizard/ folder."; ?>
-PHP
-    fi
-    chown -R "$WEB_USER":"$WEB_USER" "$WIZARD_DST"
+    install_wizard_files "$WIZARD_DST"
 
     # 8. nginx vhost
     VHOST="/etc/nginx/sites-available/${DOMAIN}.conf"
